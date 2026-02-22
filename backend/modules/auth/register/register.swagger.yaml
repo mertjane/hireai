@@ -1,0 +1,30 @@
+/api/v1/auth/register:
+  post:
+    summary: Register a new company
+    tags:
+      - AUTH
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - email
+              - password
+            properties:
+              name:
+                type: string
+                example: Diplo Developments
+              email:
+                type: string
+                example: admin@diplodev.com
+              password:
+                type: string
+                example: "DiploAut05022007**##"
+    responses:
+      '201':
+        description: Company registered successfully
+      '400':
+        description: Missing fields

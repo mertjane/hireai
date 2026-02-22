@@ -1,0 +1,147 @@
+components:
+  schemas:
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        category:
+          type: string
+
+/api/v1/questions:
+  post:
+    summary: Create a question
+    tags:
+      - QUESTIONS
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [question, category]
+            properties:
+              question:
+                type: string
+                example: "What is the difference between null and undefined?"
+              category:
+                type: string
+                example: "Frontend Developer"
+    responses:
+      '201':
+        description: Question created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      '400':
+        description: Missing required fields
+      '401':
+        description: Unauthorized
+
+  get:
+    summary: Get all questions (optional category filter)
+    tags:
+      - QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: category
+        required: false
+        schema:
+          type: string
+          example: "Frontend Developer"
+    responses:
+      '200':
+        description: List of questions
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+      '401':
+        description: Unauthorized
+
+/api/v1/questions/{id}:
+  get:
+    summary: Get question by ID
+    tags:
+      - QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Question found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      '404':
+        description: Question not found
+
+  put:
+    summary: Update question
+    tags:
+      - QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              question:
+                type: string
+              category:
+                type: string
+    responses:
+      '200':
+        description: Question updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+      '404':
+        description: Question not found
+
+  delete:
+    summary: Delete question
+    tags:
+      - QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Question deleted
+      '404':
+        description: Question not found

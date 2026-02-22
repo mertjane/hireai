@@ -1,0 +1,218 @@
+components:
+  schemas:
+    Interview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        candidate_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        scheduled_at:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          example: 30
+        token:
+          type: string
+        token_revoke:
+          type: boolean
+        access_link:
+          type: string
+        final_score:
+          type: integer
+        status:
+          type: string
+          enum: [scheduled, completed, cancelled, no_show]
+        created_at:
+          type: string
+          format: date-time
+
+/api/v1/interviews/token/{token}:
+  get:
+    summary: Access interview by token (public)
+    tags:
+      - INTERVIEWS
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Interview details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Interview'
+      '401':
+        description: Interview link has been revoked
+      '404':
+        description: Interview not found
+
+/api/v1/interviews:
+  post:
+    summary: Schedule an interview
+    tags:
+      - INTERVIEWS
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [candidate_id, job_id, scheduled_at]
+            properties:
+              candidate_id:
+                type: string
+                format: uuid
+              job_id:
+                type: string
+                format: uuid
+              scheduled_at:
+                type: string
+                format: date-time
+                example: "2026-03-01T10:00:00Z"
+              duration_minutes:
+                type: integer
+                example: 30
+    responses:
+      '201':
+        description: Interview scheduled
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Interview'
+      '400':
+        description: Missing required fields
+      '401':
+        description: Unauthorized
+
+  get:
+    summary: Get all interviews for company (optional filters)
+    tags:
+      - INTERVIEWS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: job_id
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: candidate_id
+        required: false
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of interviews
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Interview'
+      '401':
+        description: Unauthorized
+
+/api/v1/interviews/{id}:
+  get:
+    summary: Get interview by ID
+    tags:
+      - INTERVIEWS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Interview found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Interview'
+      '404':
+        description: Interview not found
+
+  put:
+    summary: Update interview (status, score, reschedule)
+    tags:
+      - INTERVIEWS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              scheduled_at:
+                type: string
+                format: date-time
+              duration_minutes:
+                type: integer
+              status:
+                type: string
+                enum: [scheduled, completed, cancelled, no_show]
+              final_score:
+                type: integer
+    responses:
+      '200':
+        description: Interview updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Interview'
+      '404':
+        description: Interview not found
+
+  delete:
+    summary: Cancel interview (revokes token, sets status to cancelled)
+    tags:
+      - INTERVIEWS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Interview cancelled
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Interview'
+      '404':
+        description: Interview not found

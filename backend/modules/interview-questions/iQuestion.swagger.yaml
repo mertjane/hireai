@@ -1,0 +1,206 @@
+components:
+  schemas:
+    InterviewQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        interview_id:
+          type: string
+          format: uuid
+        question_id:
+          type: string
+          format: uuid
+        q_timer:
+          type: integer
+          example: 120
+        q_answer:
+          type: string
+
+/api/v1/interview-questions/token/{token}:
+  get:
+    summary: Get all questions for an interview by candidate token (public)
+    tags:
+      - INTERVIEW_QUESTIONS
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of interview questions with question details
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/InterviewQuestion'
+      '401':
+        description: Interview link has been revoked
+      '404':
+        description: Interview not found
+
+/api/v1/interview-questions/{id}/answer:
+  put:
+    summary: Submit answer for a question (candidate, uses token)
+    tags:
+      - INTERVIEW_QUESTIONS
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [token, q_answer]
+            properties:
+              token:
+                type: string
+              q_answer:
+                type: string
+    responses:
+      '200':
+        description: Answer submitted
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewQuestion'
+      '400':
+        description: Missing required fields
+      '401':
+        description: Interview link has been revoked
+      '404':
+        description: Question not found
+
+/api/v1/interview-questions:
+  post:
+    summary: Add a question to an interview
+    tags:
+      - INTERVIEW_QUESTIONS
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [interview_id, question_id]
+            properties:
+              interview_id:
+                type: string
+                format: uuid
+              question_id:
+                type: string
+                format: uuid
+              q_timer:
+                type: integer
+                example: 120
+                description: Time limit in seconds for this question
+    responses:
+      '201':
+        description: Question added to interview
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewQuestion'
+      '400':
+        description: Missing required fields
+      '401':
+        description: Unauthorized
+      '404':
+        description: Interview not found
+
+  get:
+    summary: Get all questions for an interview
+    tags:
+      - INTERVIEW_QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: interview_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of interview questions with question details
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/InterviewQuestion'
+      '400':
+        description: interview_id is required
+      '401':
+        description: Unauthorized
+      '404':
+        description: Interview not found
+
+/api/v1/interview-questions/{id}:
+  put:
+    summary: Update interview question (timer)
+    tags:
+      - INTERVIEW_QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              q_timer:
+                type: integer
+    responses:
+      '200':
+        description: Interview question updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewQuestion'
+      '401':
+        description: Unauthorized
+      '404':
+        description: Interview question not found
+
+  delete:
+    summary: Remove question from interview
+    tags:
+      - INTERVIEW_QUESTIONS
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Question removed from interview
+      '401':
+        description: Unauthorized
+      '404':
+        description: Interview question not found

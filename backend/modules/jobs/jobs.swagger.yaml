@@ -1,0 +1,201 @@
+components:
+  schemas:
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        department:
+          type: string
+        location:
+          type: string
+        work_type:
+          type: string
+          enum: [remote, hybrid, on-site]
+        status:
+          type: string
+          enum: [draft, active, closed]
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+/api/v1/jobs:
+  post:
+    summary: Create a job
+    tags:
+      - JOBS
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [company_id, title, department, location, description]
+            properties:
+              company_id:
+                type: string
+                format: uuid
+                example: 5cf77b3f-b52c-4f79-b543-5dea06c25c59
+              title:
+                type: string
+                example: Senior Frontend Developer
+              department:
+                type: string
+                example: Engineering
+              location:
+                type: string
+                example: Istanbul, Turkey
+              work_type:
+                type: string
+                enum: [remote, hybrid, on-site]
+                example: hybrid
+              status:
+                type: string
+                enum: [draft, active, closed]
+                example: active
+              description:
+                type: string
+                example: We are looking for a skilled frontend developer.
+    responses:
+      '201':
+        description: Job created
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      '400':
+        description: Missing required fields
+      '500':
+        description: Internal server error
+
+  get:
+    summary: Get all jobs for a company
+    tags:
+      - JOBS
+    parameters:
+      - in: query
+        name: company_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 5cf77b3f-b52c-4f79-b543-5dea06c25c59
+    responses:
+      '200':
+        description: List of jobs
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+      '400':
+        description: company_id is required
+
+/api/v1/jobs/{id}:
+  get:
+    summary: Get a job by ID
+    tags:
+      - JOBS
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: company_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Job found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      '404':
+        description: Job not found
+
+  put:
+    summary: Update a job
+    tags:
+      - JOBS
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [company_id]
+            properties:
+              company_id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              department:
+                type: string
+              location:
+                type: string
+              work_type:
+                type: string
+                enum: [remote, hybrid, on-site]
+              status:
+                type: string
+                enum: [draft, active, closed]
+              description:
+                type: string
+    responses:
+      '200':
+        description: Job updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      '404':
+        description: Job not found
+
+  delete:
+    summary: Delete a job
+    tags:
+      - JOBS
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: company_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Job deleted successfully
+      '404':
+        description: Job not found
