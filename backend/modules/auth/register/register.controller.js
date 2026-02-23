@@ -4,7 +4,7 @@ export const handleRegister = async (req, res) => {
     try {
         const { email, password, name } = req.body;
         if (!email || !password || !name) return res.status(400).json({ error: 'Missing fields' });
-
+ 
         const data = await createCompany(req.body);
         res.status(201).json(data);
     } catch (error) {
