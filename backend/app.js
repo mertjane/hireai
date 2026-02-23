@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors'; // Added cors to allow frontend-backend communication across origins - Bora
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger.js';
 import registerRoutes from './modules/auth/register/register.route.js';
@@ -10,6 +11,7 @@ import questionsRoutes from './modules/questions/question.route.js';
 import iQuestionRoutes from './modules/interview-questions/iQuestion.route.js';
 
 const app = express();
+app.use(cors()); // Enabled CORS for all origins in dev; restrict in production - Bora
 app.use(express.json());
 
 // Swagger UI Route
