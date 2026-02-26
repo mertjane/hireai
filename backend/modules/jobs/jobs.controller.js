@@ -19,8 +19,10 @@ export const createJob = async (req, res) => {
 
 export const getJobs = async (req, res) => {
     try {
-        const data = await jobsService.getJobs(req.company.id);
-        res.status(HTTP_STATUS.OK).json(data);
+        const data = req.company
+            ? await jobsService.getJobs(req.company.id)
+            : await jobsService.getAllJobs();
+        res.status(HTTP_STATUS.OK).json({ jobs: data });
     } catch (error) {
         handleError(res, error);
     }
@@ -28,8 +30,10 @@ export const getJobs = async (req, res) => {
 
 export const getJob = async (req, res) => {
     try {
-        const data = await jobsService.getJob(req.params.id, req.company.id);
-        res.status(HTTP_STATUS.OK).json(data);
+        const data = req.company
+            ? await jobsService.getJob(req.params.id, req.company.id)
+            : await jobsService.getJobPublic(req.params.id);
+        res.status(HTTP_STATUS.OK).json({ jobs: data });
     } catch (error) {
         handleError(res, error);
     }

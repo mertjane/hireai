@@ -4,12 +4,13 @@ import { authenticate } from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.use(authenticate);
-
-router.post('/', jobsController.createJob);
+// Public routes — no auth required
 router.get('/', jobsController.getJobs);
 router.get('/:id', jobsController.getJob);
-router.put('/:id', jobsController.updateJob);
-router.delete('/:id', jobsController.deleteJob);
+
+// Protected routes — company/admin only
+router.post('/', authenticate, jobsController.createJob);
+router.put('/:id', authenticate, jobsController.updateJob);
+router.delete('/:id', authenticate, jobsController.deleteJob);
 
 export default router;

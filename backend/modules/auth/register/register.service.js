@@ -5,7 +5,7 @@ import { saveCompany } from "./register.repository.js";
 import { hashPassword } from "../../../utils/password.util.js";
 
 const auth = getAuth(firebase);
-
+ 
 export const createCompany = async (companyData) => {
     try {
         const { email, password, name } = companyData;

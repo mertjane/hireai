@@ -5,7 +5,7 @@ export const saveCompany = async (dbPayload) => {
         .from('companies')
         .insert([dbPayload])
         .select()
-        .single();
+        .single(); 
 
     if (error) throw error;
     return data;

@@ -22,12 +22,34 @@ export const getJobsByCompany = async (company_id) => {
     return data;
 };
 
+export const getAllJobs = async () => {
+    const { data, error } = await supabase
+        .from('jobs')
+        .select('*, companies(id, name)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+};
+
 export const getJobById = async (id, company_id) => {
     const { data, error } = await supabase
         .from('jobs')
         .select('*')
         .eq('id', id)
         .eq('company_id', company_id)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
+};
+
+export const getJobByIdPublic = async (id) => {
+    const { data, error } = await supabase
+        .from('jobs')
+        .select('*, companies(id, name)')
+        .eq('id', id)
         .maybeSingle();
 
     if (error) throw error;
