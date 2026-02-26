@@ -14,8 +14,18 @@ export const getJobs = async (company_id) => {
     return await jobsRepo.getJobsByCompany(company_id);
 };
 
+export const getAllJobs = async () => {
+    return await jobsRepo.getAllJobs();
+};
+
 export const getJob = async (id, company_id) => {
     const job = await jobsRepo.getJobById(id, company_id);
+    assertFound(job);
+    return job;
+};
+
+export const getJobPublic = async (id) => {
+    const job = await jobsRepo.getJobByIdPublic(id);
     assertFound(job);
     return job;
 };
