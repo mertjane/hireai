@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InterviewAI -- Application Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* =====================================================
+       TOKENS
+       ===================================================== */
+    :root {
+      --bg:          #070a12;
+      --surface:     #0c1020;
+      --panel:       #101525;
+      --border:      rgba(255,255,255,0.06);
+      --border-hi:   rgba(255,255,255,0.14);
+
+      /* Lane accent colours */
+      --co-blue:     #38bdf8;   /* Company / HR lane */
+      --co-blue-dim: rgba(56,189,248,0.08);
+      --co-blue-mid: rgba(56,189,248,0.18);
+
+      --ai-green:    #4ade80;   /* AI / ElevenLabs lane */
+      --ai-green-dim:rgba(74,222,128,0.08);
+      --ai-green-mid:rgba(74,222,128,0.18);
+
+      --ca-amber:    #fb923c;   /* Candidate lane */
+      --ca-amber-dim:rgba(251,146,60,0.08);
+      --ca-amber-mid:rgba(251,146,60,0.18);
+
+      --db-purple:   #a78bfa;   /* Database / storage lane */
+      --db-purple-dim:rgba(167,139,250,0.08);
+      --db-purple-mid:rgba(167,139,250,0.18);
+
+      --text:        #e2e8f0;
+      --muted:       #64748b;
+      --subtle:      #1e2a40;
+
+      --ff-display: 'Outfit', sans-serif;
+      --ff-mono:    'JetBrains Mono', monospace;
+
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+    }
+
+    /* =====================================================
+       RESET
+       ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--ff-display);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* =====================================================
+       BACKGROUND GRID
+       ===================================================== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =====================================================
+       PAGE WRAPPER
+       ===================================================== */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+    }
+
+    /* =====================================================
+       HEADER
+       ===================================================== */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .header-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--ff-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ai-green);
+      background: var(--ai-green-dim);
+      border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 100px;
+      padding: 5px 14px;
+      margin-bottom: 18px;
+    }
+
+    .pulse-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--ai-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.3; transform:scale(0.6); }
+    }
+
+    .header h1 {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .header h1 span { color: var(--ai-green); }
+
+    .header-sub {
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* =====================================================
+       LEGEND
+       ===================================================== */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-line {
+      width: 24px; height: 2px;
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    /* =====================================================
+       DIAGRAM CONTAINER
+       ===================================================== */
+    .diagram {
+      position: relative;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    /* =====================================================
+       SWIM LANE HEADER ROW
+       ===================================================== */
+    .lanes-header {
+      display: grid;
+      grid-template-columns: 180px 1fr 1fr 1fr 1fr;
+      gap: 0;
+      margin-bottom: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .lane-label-corner { /* empty top-left cell */ }
+
+    .lane-header {
+      padding: 14px 20px;
+      text-align: center;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      border: 1px solid var(--border-hi);
+      border-bottom: none;
+      margin: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .lane-header-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--r-sm);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .lane-header-icon svg { width: 15px; height: 15px; }
+
+    .lane-header-text { text-align: left; }
+    .lane-header-name { font-family: var(--ff-display); font-size: 0.82rem; font-weight: 700; }
+    .lane-header-sub  { font-size: 0.65rem; font-weight: 400; opacity: 0.7; }
+
+    .lh-company  { background: var(--co-blue-dim);    border-color: rgba(56,189,248,0.25); }
+    .lh-ai       { background: var(--ai-green-dim);   border-color: rgba(74,222,128,0.25); }
+    .lh-candidate{ background: var(--ca-amber-dim);   border-color: rgba(251,146,60,0.25); }
+    .lh-database { background: var(--db-purple-dim);  border-color: rgba(167,139,250,0.25); }
+
+    .lh-company   .lane-header-name { color: var(--co-blue); }
+    .lh-ai        .lane-header-name { color: var(--ai-green); }
+    .lh-candidate .lane-header-name { color: var(--ca-amber); }
+    .lh-database  .lane-header-name { color: var(--db-purple); }
+
+    .lh-company   .lane-header-icon { background: var(--co-blue-mid);    color: var(--co-blue); }
+    .lh-ai        .lane-header-icon { background: var(--ai-green-mid);   color: var(--ai-green); }
+    .lh-candidate .lane-header-icon { background: var(--ca-amber-mid);   color: var(--ca-amber); }
+    .lh-database  .lane-header-icon { background: var(--db-purple-mid);  color: var(--db-purple); }
+
+    /* =====================================================
+       MAIN GRID BODY
+       ===================================================== */
+    .lanes-body {
+      display: grid;
+      grid-template-columns: 180px 1fr 1fr 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border-hi);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+      overflow: hidden;
+      background: var(--surface);
+      position: relative;
+    }
+
+    /* Phase label column */
+    .phase-col {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phase-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: horizontal-tb;
+      padding: 20px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    .phase-label:last-child { border-bottom: none; }
+
+    .phase-number {
+      font-family: var(--ff-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .phase-name {
+      font-family: var(--ff-display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .phase-badge {
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 100px;
+      padding: 2px 7px;
+    }
+
+    /* Lane columns */
+    .lane-col {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lane-col:last-child { border-right: none; }
+
+    .lane-cell {
+      padding: 16px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      min-height: 120px;
+    }
+
+    .lane-cell:last-child { border-bottom: none; }
+
+    /* =====================================================
+       NODES (ACTION BOXES)
+       ===================================================== */
+    .node {
+      width: 100%;
+      border-radius: var(--r-md);
+      padding: 11px 13px;
+      border: 1px solid var(--border-hi);
+      background: var(--panel);
+      position: relative;
+      transition: transform 0.18s, box-shadow 0.18s;
+      cursor: default;
+    }
+
+    .node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .node-icon-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 6px;
+    }
+
+    .node-icon {
+      width: 22px; height: 22px;
+      border-radius: var(--r-sm);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .node-icon svg { width: 12px; height: 12px; }
+
+    .node-label {
+      font-family: var(--ff-display);
+      font-size: 0.76rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    .node-desc {
+      font-size: 0.67rem;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 2px;
+    }
+
+    .node-tag {
+      display: inline-block;
+      font-family: var(--ff-mono);
+      font-size: 0.58rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Colour variants */
+    .node-company {
+      border-color: rgba(56,189,248,0.25);
+      background: linear-gradient(135deg, rgba(56,189,248,0.06) 0%, var(--panel) 100%);
+    }
+    .node-company .node-icon { background: var(--co-blue-mid); color: var(--co-blue); }
+    .node-company .node-label { color: var(--co-blue); }
+    .node-company .node-tag  { background: var(--co-blue-dim); color: var(--co-blue); }
+
+    .node-ai {
+      border-color: rgba(74,222,128,0.25);
+      background: linear-gradient(135deg, rgba(74,222,128,0.06) 0%, var(--panel) 100%);
+    }
+    .node-ai .node-icon { background: var(--ai-green-mid); color: var(--ai-green); }
+    .node-ai .node-label { color: var(--ai-green); }
+    .node-ai .node-tag  { background: var(--ai-green-dim); color: var(--ai-green); }
+
+    .node-candidate {
+      border-color: rgba(251,146,60,0.25);
+      background: linear-gradient(135deg, rgba(251,146,60,0.06) 0%, var(--panel) 100%);
+    }
+    .node-candidate .node-icon { background: var(--ca-amber-mid); color: var(--ca-amber); }
+    .node-candidate .node-label { color: var(--ca-amber); }
+    .node-candidate .node-tag  { background: var(--ca-amber-dim); color: var(--ca-amber); }
+
+    .node-database {
+      border-color: rgba(167,139,250,0.25);
+      background: linear-gradient(135deg, rgba(167,139,250,0.06) 0%, var(--panel) 100%);
+    }
+    .node-database .node-icon { background: var(--db-purple-mid); color: var(--db-purple); }
+    .node-database .node-label { color: var(--db-purple); }
+    .node-database .node-tag  { background: var(--db-purple-dim); color: var(--db-purple); }
+
+    /* Decision diamond */
+    .node-decision {
+      border-color: rgba(251,191,36,0.3);
+      background: linear-gradient(135deg, rgba(251,191,36,0.06) 0%, var(--panel) 100%);
+    }
+    .node-decision .node-icon { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .node-decision .node-label { color: #fbbf24; }
+    .node-decision .node-tag  { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+    /* Start / end nodes */
+    .node-start, .node-end {
+      border-radius: 100px;
+      text-align: center;
+      padding: 9px 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: var(--ff-mono);
+    }
+
+    .node-start {
+      background: var(--co-blue-mid);
+      border-color: rgba(56,189,248,0.4);
+      color: var(--co-blue);
+    }
+
+    .node-end {
+      background: var(--ai-green-mid);
+      border-color: rgba(74,222,128,0.4);
+      color: var(--ai-green);
+    }
+
+    /* =====================================================
+       ARROWS / CONNECTORS
+       ===================================================== */
+
+    /* Vertical arrow inside a cell */
+    .arrow-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+    }
+
+    .arrow-line {
+      width: 1px;
+      height: 14px;
+      background: linear-gradient(to bottom, var(--border-hi), rgba(255,255,255,0.2));
+    }
+
+    .arrow-head {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid rgba(255,255,255,0.2);
+    }
+
+    .arrow-label {
+      font-family: var(--ff-mono);
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* Cross-lane connector (horizontal indicator) */
+    .cross-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--ff-mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+      padding: 4px 8px;
+      border: 1px dashed var(--border-hi);
+      border-radius: 100px;
+      background: rgba(255,255,255,0.02);
+      white-space: nowrap;
+    }
+
+    .cross-indicator svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+    /* SVG arrows overlaid on the grid */
+    .arrows-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      overflow: visible;
+    }
+
+    /* =====================================================
+       PHASE ROW HEIGHTS -- each row is a phase
+       ===================================================== */
+    .phase-row-1 { min-height: 130px; }
+    .phase-row-2 { min-height: 180px; }
+    .phase-row-3 { min-height: 180px; }
+    .phase-row-4 { min-height: 210px; }
+    .phase-row-5 { min-height: 160px; }
+    .phase-row-6 { min-height: 140px; }
+    .phase-row-7 { min-height: 130px; }
+
+    /* =====================================================
+       PHASE LABEL HEIGHTS (must match cell heights)
+       ===================================================== */
+
+    /* Phase colours */
+    .ph-1 .phase-badge { background: var(--co-blue-dim);    color: var(--co-blue);    }
+    .ph-2 .phase-badge { background: var(--ai-green-dim);   color: var(--ai-green);   }
+    .ph-3 .phase-badge { background: var(--ca-amber-dim);   color: var(--ca-amber);   }
+    .ph-4 .phase-badge { background: var(--ai-green-dim);   color: var(--ai-green);   }
+    .ph-5 .phase-badge { background: var(--db-purple-dim);  color: var(--db-purple);  }
+    .ph-6 .phase-badge { background: rgba(251,191,36,0.1);  color: #fbbf24;           }
+    .ph-7 .phase-badge { background: var(--ai-green-dim);   color: var(--ai-green);   }
+
+    /* =====================================================
+       DATA FLOW TAG
+       ===================================================== */
+    .flow-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--ff-mono);
+      font-size: 0.58rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .flow-tag svg { width: 9px; height: 9px; }
+
+    /* =====================================================
+       SECTION DIVIDER
+       ===================================================== */
+    .section-gap {
+      height: 48px;
+    }
+
+    /* =====================================================
+       ANNOTATIONS
+       ===================================================== */
+    .annotations {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 40px;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+
+    .annotation-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 18px 20px;
+      transition: border-color 0.2s;
+    }
+
+    .annotation-card:hover { border-color: var(--border-hi); }
+
+    .annotation-title {
+      font-family: var(--ff-display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .annotation-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .annotation-body {
+      font-size: 0.75rem;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .annotation-body code {
+      font-family: var(--ff-mono);
+      font-size: 0.65rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      color: var(--text);
+    }
+
+    /* =====================================================
+       ANIMATIONS
+       ===================================================== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .node { animation: fadeUp 0.5s ease both; }
+
+    /* stagger nodes per phase row */
+    .phase-row-1 .node { animation-delay: 0.15s; }
+    .phase-row-2 .node { animation-delay: 0.22s; }
+    .phase-row-3 .node { animation-delay: 0.29s; }
+    .phase-row-4 .node { animation-delay: 0.36s; }
+    .phase-row-5 .node { animation-delay: 0.43s; }
+    .phase-row-6 .node { animation-delay: 0.50s; }
+    .phase-row-7 .node { animation-delay: 0.57s; }
+
+    /* =====================================================
+       BETWEEN-LANE DIVIDERS (coloured tops on lanes)
+       ===================================================== */
+    .lc-company   { border-top: 2px solid rgba(56,189,248,0.35); }
+    .lc-ai        { border-top: 2px solid rgba(74,222,128,0.35); }
+    .lc-candidate { border-top: 2px solid rgba(251,146,60,0.35); }
+    .lc-database  { border-top: 2px solid rgba(167,139,250,0.35); }
+
+    /* responsive */
+    @media (max-width: 900px) {
+      .lanes-header { grid-template-columns: 100px repeat(4,1fr); }
+      .lanes-body   { grid-template-columns: 100px repeat(4,1fr); }
+      .annotations  { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ========================================================
+       HEADER
+       ======================================================== -->
+  <div class="header">
+    <div class="header-eyebrow">
+      <span class="pulse-dot"></span>
+      System Architecture -- Application Workflow
+    </div>
+    <h1>InterviewAI <span>Workflow</span> Diagram</h1>
+    <p class="header-sub">End-to-end data and interaction flow across the company, AI layer, candidate, and database systems.</p>
+  </div>
+
+  <!-- ========================================================
+       LEGEND
+       ======================================================== -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--co-blue)"></div>
+      Company / HR Portal
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--ai-green)"></div>
+      AI / ElevenLabs Layer
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--ca-amber)"></div>
+      Candidate Interface
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--db-purple)"></div>
+      Cloudflare D1 Database
+    </div>
+    <div class="legend-item">
+      <div class="legend-line" style="background:var(--border-hi)"></div>
+      Data / API Flow
+    </div>
+    <div class="legend-item">
+      <div class="legend-line" style="background:#fbbf24; opacity:0.6"></div>
+      Decision / Branch
+    </div>
+  </div>
+
+  <!-- ========================================================
+       DIAGRAM
+       ======================================================== -->
+  <div class="diagram">
+
+    <!-- Lane Headers -->
+    <div class="lanes-header">
+      <div class="lane-label-corner"></div>
+
+      <div class="lane-header lh-company">
+        <div class="lane-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+        </div>
+        <div class="lane-header-text">
+          <div class="lane-header-name">Company / HR</div>
+          <div class="lane-header-sub">Dashboard Portal</div>
+        </div>
+      </div>
+
+      <div class="lane-header lh-ai">
+        <div class="lane-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8"  y1="23" x2="16" y2="23"/>
+          </svg>
+        </div>
+        <div class="lane-header-text">
+          <div class="lane-header-name">AI / ElevenLabs</div>
+          <div class="lane-header-sub">TTS + STT Engine</div>
+        </div>
+      </div>
+
+      <div class="lane-header lh-candidate">
+        <div class="lane-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="lane-header-text">
+          <div class="lane-header-name">Candidate</div>
+          <div class="lane-header-sub">Invite-Link Flow</div>
+        </div>
+      </div>
+
+      <div class="lane-header lh-database">
+        <div class="lane-header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+            <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+          </svg>
+        </div>
+        <div class="lane-header-text">
+          <div class="lane-header-name">Cloudflare D1</div>
+          <div class="lane-header-sub">PostgreSQL Storage</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================
+         LANES BODY
+         ====================================================== -->
+    <div class="lanes-body">
+
+      <!-- PHASE COL -->
+      <div class="phase-col">
+        <div class="phase-label ph-1 phase-row-1">
+          <div class="phase-number">Phase 01</div>
+          <div class="phase-name">Authentication</div>
+          <div class="phase-badge">Register / Login</div>
+        </div>
+        <div class="phase-label ph-2 phase-row-2">
+          <div class="phase-number">Phase 02</div>
+          <div class="phase-name">Job Setup</div>
+          <div class="phase-badge">Post + Configure</div>
+        </div>
+        <div class="phase-label ph-3 phase-row-3">
+          <div class="phase-number">Phase 03</div>
+          <div class="phase-name">Interview Setup</div>
+          <div class="phase-badge">Questions + Timer</div>
+        </div>
+        <div class="phase-label ph-4 phase-row-4">
+          <div class="phase-number">Phase 04</div>
+          <div class="phase-name">Candidate Interview</div>
+          <div class="phase-badge">TTS + STT</div>
+        </div>
+        <div class="phase-label ph-5 phase-row-5">
+          <div class="phase-number">Phase 05</div>
+          <div class="phase-name">Answer Storage</div>
+          <div class="phase-badge">Persist + Score</div>
+        </div>
+        <div class="phase-label ph-6 phase-row-6">
+          <div class="phase-number">Phase 06</div>
+          <div class="phase-name">HR Review</div>
+          <div class="phase-badge">Results + Action</div>
+        </div>
+        <div class="phase-label ph-7 phase-row-7">
+          <div class="phase-number">Phase 07</div>
+          <div class="phase-name">Outcome</div>
+          <div class="phase-badge">Shortlist / Reject</div>
+        </div>
+      </div>
+
+      <!-- ====================================================
+           COMPANY LANE
+           ==================================================== -->
+      <div class="lane-col lc-company">
+
+        <!-- Phase 1 -->
+        <div class="lane-cell phase-row-1">
+          <div class="node node-start">Company Register / Login</div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <div class="node-label">JWT Session Created</div>
+            </div>
+            <div class="node-desc">Tenant ID scoped to company. All subsequent API calls include Bearer token.</div>
+            <div class="node-tag">POST /auth/login</div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="lane-cell phase-row-2">
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </div>
+              <div class="node-label">Create Job Post</div>
+            </div>
+            <div class="node-desc">HR staff creates vacancy with title, department, location, and status (draft / active).</div>
+            <div class="node-tag">POST /jobs</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="node-label">Review Applicants</div>
+            </div>
+            <div class="node-desc">View incoming applications per job role with name, email, and application date.</div>
+            <div class="node-tag">GET /jobs/:id/applicants</div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="lane-cell phase-row-3">
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </div>
+              <div class="node-label">Select Questions</div>
+            </div>
+            <div class="node-desc">Staff picks from pre-defined question bank (General, Technical, Behavioural). No manual writing.</div>
+            <div class="node-tag">GET /questions?category=</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="node-label">Set Answer Timers</div>
+            </div>
+            <div class="node-desc">Per-question countdown timer (60s / 90s / 120s / 180s). Timer auto-advances on expiry.</div>
+            <div class="node-tag">POST /interviews</div>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="lane-cell phase-row-4">
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+              <div class="node-label">Send Invite Links</div>
+            </div>
+            <div class="node-desc">System generates UUID token per applicant. Link emailed with expiry date. No account needed.</div>
+            <div class="node-tag">POST /applicants/:id/invite</div>
+          </div>
+          <div class="cross-indicator" style="color: var(--ca-amber)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+            Invite token delivered to candidate
+          </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="lane-cell phase-row-5" style="justify-content:center; opacity:0.4">
+          <div class="flow-tag">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+            </svg>
+            Automated -- no HR input
+          </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="lane-cell phase-row-6">
+          <div class="node node-company">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <div class="node-label">Review Results Dashboard</div>
+            </div>
+            <div class="node-desc">HR reads transcribed answers, AI scores, and session duration per candidate. Full transcript viewable.</div>
+            <div class="node-tag">GET /jobs/:id/results</div>
+          </div>
+        </div>
+
+        <!-- Phase 7 -->
+        <div class="lane-cell phase-row-7">
+          <div class="node node-decision">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="node-label">Set Applicant Status</div>
+            </div>
+            <div class="node-desc">Shortlisted / Under Review / Rejected. Status stored and visible in applicant table.</div>
+            <div class="node-tag">PATCH /applicants/:id/status</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           AI / ELEVENLABS LANE
+           ==================================================== -->
+      <div class="lane-col lc-ai">
+
+        <!-- Phase 1: idle -->
+        <div class="lane-cell phase-row-1" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Auth layer only</div>
+        </div>
+
+        <!-- Phase 2: idle -->
+        <div class="lane-cell phase-row-2" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Data setup only</div>
+        </div>
+
+        <!-- Phase 3: idle -->
+        <div class="lane-cell phase-row-3" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Config stored</div>
+        </div>
+
+        <!-- Phase 4: TTS active -->
+        <div class="lane-cell phase-row-4">
+          <div class="node node-ai">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                </svg>
+              </div>
+              <div class="node-label">ElevenLabs TTS</div>
+            </div>
+            <div class="node-desc">Backend calls ElevenLabs REST API with question text. Returns audio stream. Cached per question to save quota.</div>
+            <div class="node-tag">POST /text-to-speech</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-ai">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                </svg>
+              </div>
+              <div class="node-label">Audio Delivered to Browser</div>
+            </div>
+            <div class="node-desc">Question audio autoplays in candidate browser. Candidate may replay once if enabled.</div>
+            <div class="node-tag">Audio stream base64</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-ai">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                </svg>
+              </div>
+              <div class="node-label">Web Speech API (STT)</div>
+            </div>
+            <div class="node-desc">Browser-native speech-to-text captures candidate voice response. Transcribes in real time during countdown.</div>
+            <div class="node-tag">Browser STT API</div>
+          </div>
+        </div>
+
+        <!-- Phase 5: scoring -->
+        <div class="lane-cell phase-row-5">
+          <div class="node node-ai">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+              <div class="node-label">AI Scoring Engine</div>
+            </div>
+            <div class="node-desc">Keyword relevance scoring per answer (0--100). Aggregate score computed across all questions in session.</div>
+            <div class="node-tag">Server-side NLP</div>
+          </div>
+        </div>
+
+        <!-- Phase 6: idle -->
+        <div class="lane-cell phase-row-6" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Scores surfaced to HR</div>
+        </div>
+
+        <!-- Phase 7: idle -->
+        <div class="lane-cell phase-row-7" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">HR decision only</div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           CANDIDATE LANE
+           ==================================================== -->
+      <div class="lane-col lc-candidate">
+
+        <!-- Phase 1: idle -->
+        <div class="lane-cell phase-row-1" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">No candidate action</div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="lane-cell phase-row-2">
+          <div class="node node-candidate">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <div class="node-label">Submits Application</div>
+            </div>
+            <div class="node-desc">Candidate applies to a job via external job board or company careers page. HR sees them in applicant list.</div>
+            <div class="node-tag">External flow</div>
+          </div>
+        </div>
+
+        <!-- Phase 3: idle -->
+        <div class="lane-cell phase-row-3" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Awaiting invite</div>
+        </div>
+
+        <!-- Phase 4: core candidate flow -->
+        <div class="lane-cell phase-row-4">
+          <div class="node node-candidate">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </div>
+              <div class="node-label">Opens Invite Link</div>
+            </div>
+            <div class="node-desc">Receives UUID link via email. Token validated server-side -- no account creation required.</div>
+            <div class="node-tag">GET /invite/:token</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-candidate">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+              <div class="node-label">Starts Interview Session</div>
+            </div>
+            <div class="node-desc">Reads instructions, clicks Start. Session ID created. Q1 loads with audio playback and countdown timer.</div>
+            <div class="node-tag">POST /sessions</div>
+          </div>
+          <div class="arrow-down">
+            <div class="arrow-line"></div>
+            <div class="arrow-head"></div>
+          </div>
+          <div class="node node-candidate">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                </svg>
+              </div>
+              <div class="node-label">Answers Each Question</div>
+            </div>
+            <div class="node-desc">Hears question via TTS. Speaks response into microphone. Timer auto-submits and advances to next question on expiry.</div>
+            <div class="node-tag">Per-question STT capture</div>
+          </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="lane-cell phase-row-5">
+          <div class="node node-candidate">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="node-label">Interview Complete</div>
+            </div>
+            <div class="node-desc">After final question, session is locked. Candidate sees confirmation screen. Link cannot be reused.</div>
+            <div class="node-tag">POST /sessions/:id/complete</div>
+          </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="lane-cell phase-row-6" style="opacity:0.3; justify-content:center">
+          <div class="flow-tag">Session closed</div>
+        </div>
+
+        <!-- Phase 7 -->
+        <div class="lane-cell phase-row-7">
+          <div class="node node-end">Awaiting HR Decision</div>
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           DATABASE LANE
+           ==================================================== -->
+      <div class="lane-col lc-database">
+
+        <!-- Phase 1 -->
+        <div class="lane-cell phase-row-1">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">tenants + users</div>
+            </div>
+            <div class="node-desc">Company record created with tenant_id. All queries scoped by tenant_id for isolation.</div>
+            <div class="node-tag">D1 -- tenants table</div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="lane-cell phase-row-2">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">jobs + applicants</div>
+            </div>
+            <div class="node-desc">Job record stored with status, dept, location. Applicant records linked to job_id and tenant_id.</div>
+            <div class="node-tag">D1 -- jobs / applicants</div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="lane-cell phase-row-3">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">interviews + questions</div>
+            </div>
+            <div class="node-desc">Interview config stored: ordered question list, per-question timer (seconds), ElevenLabs settings, link expiry.</div>
+            <div class="node-tag">D1 -- interviews / questions</div>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="lane-cell phase-row-4">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">invite_tokens + sessions</div>
+            </div>
+            <div class="node-desc">UUID token stored with applicant_id, expiry timestamp, and used_at. Session record tracks progress.</div>
+            <div class="node-tag">D1 -- tokens / sessions</div>
+          </div>
+        </div>
+
+        <!-- Phase 5 -->
+        <div class="lane-cell phase-row-5">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">answers + scores</div>
+            </div>
+            <div class="node-desc">Each answer stored as plain text string. AI score (0--100) per answer. Aggregate score on session record.</div>
+            <div class="node-tag">D1 -- answers table</div>
+          </div>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="lane-cell phase-row-6">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                </svg>
+              </div>
+              <div class="node-label">Transcript Read</div>
+            </div>
+            <div class="node-desc">Full ordered Q&A transcript queried from answers table. Paginated results returned to dashboard.</div>
+            <div class="node-tag">GET /sessions/:id/transcript</div>
+          </div>
+        </div>
+
+        <!-- Phase 7 -->
+        <div class="lane-cell phase-row-7">
+          <div class="node node-database">
+            <div class="node-icon-row">
+              <div class="node-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div class="node-label">Status Updated</div>
+            </div>
+            <div class="node-desc">Applicant status field updated to shortlisted / rejected / under-review. Persisted for future reference.</div>
+            <div class="node-tag">PATCH applicants.status</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end lanes-body -->
+  </div><!-- end diagram -->
+
+  <!-- ========================================================
+       ANNOTATIONS
+       ======================================================== -->
+  <div class="annotations">
+
+    <div class="annotation-card">
+      <div class="annotation-title">
+        <div class="annotation-dot" style="background:var(--co-blue)"></div>
+        Multi-Tenant Isolation
+      </div>
+      <div class="annotation-body">
+        Every database query is scoped by <code>tenant_id</code>, extracted from the JWT on each request. Company A can never read Company B data. The tenant ID is injected into the request context by the JWT middleware and enforced at the service layer, not only at the route level.
+      </div>
+    </div>
+
+    <div class="annotation-card">
+      <div class="annotation-title">
+        <div class="annotation-dot" style="background:var(--ai-green)"></div>
+        ElevenLabs Integration Pattern
+      </div>
+      <div class="annotation-body">
+        TTS calls are made server-side by the Node.js backend, not directly from the browser, keeping the ElevenLabs API key secure. Generated audio is cached per question text in <code>Cloudflare D1</code> (base64 or blob) to prevent redundant API calls and reduce quota consumption per interview session.
+      </div>
+    </div>
+
+    <div class="annotation-card">
+      <div class="annotation-title">
+        <div class="annotation-dot" style="background:var(--ca-amber)"></div>
+        Candidate Link Security
+      </div>
+      <div class="annotation-body">
+        Invite links are UUID v4 tokens stored in the database with an <code>expires_at</code> timestamp and a <code>used_at</code> timestamp. Expired tokens return <code>410 Gone</code>. Completed sessions are locked server-side -- re-submission is rejected even if the link is reused before expiry.
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end page -->
+</body>
+</html>

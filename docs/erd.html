@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InterviewAI -- Database ERD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ======================================================
+       TOKENS
+       ====================================================== */
+    :root {
+      --bg:        #06080f;
+      --surface:   #0b0e1a;
+      --panel:     #0f1220;
+      --elevated:  #141828;
+      --border:    rgba(255,255,255,0.06);
+      --border-hi: rgba(255,255,255,0.12);
+
+      /* Table group colours */
+      --tenant:    #38bdf8;   /* companies, users */
+      --tenant-d:  rgba(56,189,248,0.10);
+      --tenant-b:  rgba(56,189,248,0.22);
+
+      --hiring:    #4ade80;   /* jobs, applications, candidates */
+      --hiring-d:  rgba(74,222,128,0.10);
+      --hiring-b:  rgba(74,222,128,0.22);
+
+      --interview: #fb923c;   /* interviews, interview_questions */
+      --interview-d: rgba(251,146,60,0.10);
+      --interview-b: rgba(251,146,60,0.22);
+
+      --content:   #a78bfa;   /* questions (global bank) */
+      --content-d: rgba(167,139,250,0.10);
+      --content-b: rgba(167,139,250,0.22);
+
+      --session:   #f472b6;   /* invite_tokens, interview_answers */
+      --session-d: rgba(244,114,182,0.10);
+      --session-b: rgba(244,114,182,0.22);
+
+      --pk-col:    #fbbf24;
+      --fk-col:    #94a3b8;
+      --text:      #e2e8f0;
+      --muted:     #475569;
+      --dim:       #1e2a3a;
+
+      --ff-mono:    'JetBrains Mono', monospace;
+      --ff-display: 'Outfit', sans-serif;
+
+      --r-sm: 4px;
+      --r-md: 10px;
+      --r-lg: 14px;
+    }
+
+    /* ======================================================
+       RESET
+       ====================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--ff-mono);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ======================================================
+       BACKGROUND GRID
+       ====================================================== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ======================================================
+       TOOLBAR
+       ====================================================== */
+    .toolbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-hi);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      gap: 16px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .toolbar-logo {
+      font-family: var(--ff-display);
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .toolbar-logo span { color: var(--hiring); }
+
+    .toolbar-sep {
+      width: 1px; height: 20px;
+      background: var(--border-hi);
+    }
+
+    .toolbar-title {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-hi);
+      background: var(--panel);
+      color: var(--muted);
+      font-family: var(--ff-mono);
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .ctrl-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); background: var(--elevated); }
+    .ctrl-btn svg { width: 12px; height: 12px; }
+
+    .zoom-val {
+      font-family: var(--ff-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      min-width: 38px;
+      text-align: center;
+    }
+
+    /* ======================================================
+       LEGEND
+       ====================================================== */
+    .legend {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+      background: var(--surface);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 190px;
+    }
+
+    .legend-title {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    .leg-dot {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .leg-line {
+      width: 22px; height: 2px;
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    .leg-line-dash {
+      width: 22px; height: 0;
+      border-top: 2px dashed;
+      flex-shrink: 0;
+    }
+
+    .legend-sep {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2px 0;
+    }
+
+    /* ======================================================
+       CANVAS (pan/zoom area)
+       ====================================================== */
+    .canvas-wrap {
+      position: fixed;
+      inset: 52px 0 0 0;
+      overflow: hidden;
+      cursor: grab;
+      z-index: 1;
+    }
+
+    .canvas-wrap:active { cursor: grabbing; }
+
+    .canvas {
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: 0 0;
+      /* initial transform applied via JS */
+    }
+
+    /* ======================================================
+       SVG RELATION LINES
+       ====================================================== */
+    .relations-svg {
+      position: absolute;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: visible;
+    }
+
+    /* ======================================================
+       TABLE CARDS
+       ====================================================== */
+    .tbl {
+      position: absolute;
+      background: var(--panel);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      z-index: 2;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+      width: 270px;
+      transition: box-shadow 0.2s;
+      cursor: default;
+    }
+
+    .tbl:hover {
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.14);
+      z-index: 10;
+    }
+
+    /* Table header */
+    .tbl-head {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+    }
+
+    .tbl-head-stripe {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .tbl-icon {
+      width: 26px; height: 26px;
+      border-radius: var(--r-sm);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .tbl-icon svg { width: 14px; height: 14px; }
+
+    .tbl-name {
+      font-family: var(--ff-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      flex: 1;
+    }
+
+    .tbl-badge {
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 100px;
+      padding: 2px 6px;
+    }
+
+    /* Column rows */
+    .tbl-body { padding: 6px 0; }
+
+    .col-row {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      font-size: 0.68rem;
+      line-height: 1.2;
+      transition: background 0.1s;
+    }
+
+    .col-row:hover { background: rgba(255,255,255,0.03); }
+
+    .col-key {
+      font-size: 0.58rem;
+      font-weight: 700;
+      width: 14px; height: 14px;
+      border-radius: 2px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .col-key.pk { background: rgba(251,191,36,0.15); color: var(--pk-col); }
+    .col-key.fk { background: rgba(148,163,184,0.1); color: var(--fk-col); }
+    .col-key.empty { background: transparent; }
+
+    .col-name {
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-name.pk-name { color: var(--pk-col); }
+    .col-name.fk-name { color: var(--fk-col); }
+
+    .col-type {
+      font-size: 0.6rem;
+      font-weight: 300;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .col-type .not-null {
+      color: rgba(251,146,60,0.7);
+      font-size: 0.55rem;
+      margin-left: 3px;
+    }
+
+    .col-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 14px;
+    }
+
+    /* Table group colour variants */
+    /* Tenant */
+    .tbl-tenant .tbl-head-stripe { background: var(--tenant); }
+    .tbl-tenant .tbl-icon { background: var(--tenant-b); color: var(--tenant); }
+    .tbl-tenant .tbl-name { color: var(--tenant); }
+    .tbl-tenant .tbl-badge { background: var(--tenant-d); color: var(--tenant); }
+
+    /* Hiring */
+    .tbl-hiring .tbl-head-stripe { background: var(--hiring); }
+    .tbl-hiring .tbl-icon { background: var(--hiring-b); color: var(--hiring); }
+    .tbl-hiring .tbl-name { color: var(--hiring); }
+    .tbl-hiring .tbl-badge { background: var(--hiring-d); color: var(--hiring); }
+
+    /* Interview */
+    .tbl-interview .tbl-head-stripe { background: var(--interview); }
+    .tbl-interview .tbl-icon { background: var(--interview-b); color: var(--interview); }
+    .tbl-interview .tbl-name { color: var(--interview); }
+    .tbl-interview .tbl-badge { background: var(--interview-d); color: var(--interview); }
+
+    /* Content / question bank */
+    .tbl-content .tbl-head-stripe { background: var(--content); }
+    .tbl-content .tbl-icon { background: var(--content-b); color: var(--content); }
+    .tbl-content .tbl-name { color: var(--content); }
+    .tbl-content .tbl-badge { background: var(--content-d); color: var(--content); }
+
+    /* Session */
+    .tbl-session .tbl-head-stripe { background: var(--session); }
+    .tbl-session .tbl-icon { background: var(--session-b); color: var(--session); }
+    .tbl-session .tbl-name { color: var(--session); }
+    .tbl-session .tbl-badge { background: var(--session-d); color: var(--session); }
+
+    /* ======================================================
+       CARDINALITY LABELS
+       ====================================================== */
+    .card-label {
+      font-family: var(--ff-mono);
+      font-size: 11px;
+      font-weight: 600;
+      fill: var(--muted);
+    }
+
+    /* ======================================================
+       RELATION TOOLTIP
+       ====================================================== */
+    .rel-tooltip {
+      position: absolute;
+      background: var(--elevated);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--r-md);
+      padding: 8px 12px;
+      font-size: 0.65rem;
+      color: var(--text);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 200;
+      white-space: nowrap;
+      max-width: 220px;
+    }
+
+    .rel-tooltip.visible { opacity: 1; }
+
+    /* ======================================================
+       ANIMATIONS
+       ====================================================== */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .tbl { animation: fadeIn 0.4s ease both; }
+
+    .tbl:nth-child(1)  { animation-delay: 0.05s; }
+    .tbl:nth-child(2)  { animation-delay: 0.10s; }
+    .tbl:nth-child(3)  { animation-delay: 0.15s; }
+    .tbl:nth-child(4)  { animation-delay: 0.20s; }
+    .tbl:nth-child(5)  { animation-delay: 0.25s; }
+    .tbl:nth-child(6)  { animation-delay: 0.30s; }
+    .tbl:nth-child(7)  { animation-delay: 0.35s; }
+    .tbl:nth-child(8)  { animation-delay: 0.40s; }
+    .tbl:nth-child(9)  { animation-delay: 0.45s; }
+    .tbl:nth-child(10) { animation-delay: 0.50s; }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     TOOLBAR
+     ============================================================ -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <span class="toolbar-logo">Interview<span>AI</span></span>
+    <div class="toolbar-sep"></div>
+    <span class="toolbar-title">Database Schema -- ERD</span>
+  </div>
+  <div class="toolbar-right">
+    <button class="ctrl-btn" onclick="resetView()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+      </svg>
+      Reset View
+    </button>
+    <button class="ctrl-btn" onclick="changeZoom(-0.1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>
+    </button>
+    <span class="zoom-val" id="zoomVal">80%</span>
+    <button class="ctrl-btn" onclick="changeZoom(0.1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>
+    </button>
+    <div class="toolbar-sep"></div>
+    <span class="ctrl-btn" style="cursor:default; color: rgba(74,222,128,0.8)">
+      Cloudflare D1 (PostgreSQL)
+    </span>
+  </div>
+</div>
+
+<!-- ============================================================
+     LEGEND
+     ============================================================ -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+
+  <div class="legend-item">
+    <div class="leg-dot" style="background:var(--tenant)"></div>
+    Tenant layer (companies, users)
+  </div>
+  <div class="legend-item">
+    <div class="leg-dot" style="background:var(--hiring)"></div>
+    Hiring layer (jobs, candidates, applications)
+  </div>
+  <div class="legend-item">
+    <div class="leg-dot" style="background:var(--interview)"></div>
+    Interview config (interviews, interview_questions)
+  </div>
+  <div class="legend-item">
+    <div class="leg-dot" style="background:var(--content)"></div>
+    Global question bank (questions)
+  </div>
+  <div class="legend-item">
+    <div class="leg-dot" style="background:var(--session)"></div>
+    Session layer (invite_tokens, interview_answers)
+  </div>
+
+  <hr class="legend-sep" />
+
+  <div class="legend-item">
+    <div style="font-family:var(--ff-mono); font-size:0.6rem; font-weight:700; color:var(--pk-col); width:22px; text-align:center">PK</div>
+    Primary Key
+  </div>
+  <div class="legend-item">
+    <div style="font-family:var(--ff-mono); font-size:0.6rem; font-weight:700; color:var(--fk-col); width:22px; text-align:center">FK</div>
+    Foreign Key
+  </div>
+
+  <hr class="legend-sep" />
+
+  <div class="legend-item">
+    <div class="leg-line" style="background:rgba(255,255,255,0.3)"></div>
+    One-to-Many (1:N)
+  </div>
+  <div class="legend-item">
+    <div class="leg-line-dash" style="border-color:rgba(255,255,255,0.2)"></div>
+    Many-to-Many via join table
+  </div>
+</div>
+
+<!-- ============================================================
+     TOOLTIP
+     ============================================================ -->
+<div class="rel-tooltip" id="tooltip"></div>
+
+<!-- ============================================================
+     CANVAS
+     ============================================================ -->
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="canvas" id="canvas">
+
+    <!-- SVG RELATIONS (drawn behind tables) -->
+    <svg class="relations-svg" id="relSvg" width="2400" height="2000"></svg>
+
+    <!-- ==================================================
+         TABLE: companies
+         ================================================== -->
+    <div class="tbl tbl-tenant" id="tbl-companies" style="left:60px; top:60px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+        </div>
+        <span class="tbl-name">companies</span>
+        <span class="tbl-badge">Tenant Root</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">name</div>
+          <div class="col-type">VARCHAR(255) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">email_domain</div>
+          <div class="col-type">VARCHAR(100)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">plan</div>
+          <div class="col-type">ENUM(starter,growth,enterprise)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_active</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">updated_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: users
+         ================================================== -->
+    <div class="tbl tbl-tenant" id="tbl-users" style="left:60px; top:360px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <span class="tbl-name">users</span>
+        <span class="tbl-badge">HR Staff</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">company_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">first_name</div>
+          <div class="col-type">VARCHAR(100) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">last_name</div>
+          <div class="col-type">VARCHAR(100) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">email</div>
+          <div class="col-type">VARCHAR(255) UNIQUE <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">password_hash</div>
+          <div class="col-type">VARCHAR(255) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">role</div>
+          <div class="col-type">ENUM(admin,staff)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_active</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: jobs
+         ================================================== -->
+    <div class="tbl tbl-hiring" id="tbl-jobs" style="left:400px; top:60px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+        </div>
+        <span class="tbl-name">jobs</span>
+        <span class="tbl-badge">Vacancy</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">company_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">created_by</div>
+          <div class="col-type">UUID (users.id)</div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">title</div>
+          <div class="col-type">VARCHAR(255) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">department</div>
+          <div class="col-type">VARCHAR(100)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">location</div>
+          <div class="col-type">VARCHAR(150)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">work_type</div>
+          <div class="col-type">ENUM(remote,hybrid,onsite)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">status</div>
+          <div class="col-type">ENUM(draft,active,closed) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">description</div>
+          <div class="col-type">TEXT</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">updated_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: candidates
+         ================================================== -->
+    <div class="tbl tbl-hiring" id="tbl-candidates" style="left:400px; top:480px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <span class="tbl-name">candidates</span>
+        <span class="tbl-badge">No Account</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">company_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">first_name</div>
+          <div class="col-type">VARCHAR(100) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">last_name</div>
+          <div class="col-type">VARCHAR(100) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">email</div>
+          <div class="col-type">VARCHAR(255) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">phone</div>
+          <div class="col-type">VARCHAR(30)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: applications
+         ================================================== -->
+    <div class="tbl tbl-hiring" id="tbl-applications" style="left:740px; top:280px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <span class="tbl-name">applications</span>
+        <span class="tbl-badge">Join: candidate x job</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">company_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">candidate_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">job_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">status</div>
+          <div class="col-type">ENUM(pending,invited,in_progress,completed,shortlisted,rejected)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">aggregate_score</div>
+          <div class="col-type">NUMERIC(5,2)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">applied_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">completed_at</div>
+          <div class="col-type">TIMESTAMPTZ</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">notes</div>
+          <div class="col-type">TEXT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: interviews
+         ================================================== -->
+    <div class="tbl tbl-interview" id="tbl-interviews" style="left:1090px; top:60px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <span class="tbl-name">interviews</span>
+        <span class="tbl-badge">Config per Job</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">job_id</div>
+          <div class="col-type">UUID UNIQUE <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">company_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">created_by</div>
+          <div class="col-type">UUID (users.id)</div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">title</div>
+          <div class="col-type">VARCHAR(255) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">default_timer_secs</div>
+          <div class="col-type">INTEGER DEFAULT 90</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">tts_enabled</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">stt_enabled</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">allow_retakes</div>
+          <div class="col-type">BOOLEAN DEFAULT false</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">link_expiry_days</div>
+          <div class="col-type">INTEGER DEFAULT 7</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_active</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: questions (global bank)
+         ================================================== -->
+    <div class="tbl tbl-content" id="tbl-questions" style="left:1090px; top:600px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <span class="tbl-name">questions</span>
+        <span class="tbl-badge">Global Bank</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">question_text</div>
+          <div class="col-type">TEXT <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">category</div>
+          <div class="col-type">ENUM(general,technical_fe,technical_be,behavioural,leadership) <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">suggested_timer_secs</div>
+          <div class="col-type">INTEGER DEFAULT 90</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">difficulty</div>
+          <div class="col-type">ENUM(easy,medium,hard)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">tts_audio_cache</div>
+          <div class="col-type">TEXT (base64)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_active</div>
+          <div class="col-type">BOOLEAN DEFAULT true</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: interview_questions
+         ================================================== -->
+    <div class="tbl tbl-interview" id="tbl-interview_questions" style="left:1430px; top:340px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </div>
+        <span class="tbl-name">interview_questions</span>
+        <span class="tbl-badge">Join + Config</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">interview_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">question_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">order_index</div>
+          <div class="col-type">INTEGER <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">timer_override_secs</div>
+          <div class="col-type">INTEGER</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: invite_tokens
+         ================================================== -->
+    <div class="tbl tbl-session" id="tbl-invite_tokens" style="left:740px; top:680px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <span class="tbl-name">invite_tokens</span>
+        <span class="tbl-badge">Audit Trail</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">application_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">interview_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">token</div>
+          <div class="col-type">UUID UNIQUE <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">expires_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">used_at</div>
+          <div class="col-type">TIMESTAMPTZ</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_revoked</div>
+          <div class="col-type">BOOLEAN DEFAULT false</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">created_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================
+         TABLE: interview_answers
+         ================================================== -->
+    <div class="tbl tbl-session" id="tbl-interview_answers" style="left:1430px; top:680px">
+      <div class="tbl-head">
+        <div class="tbl-head-stripe"></div>
+        <div class="tbl-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+          </svg>
+        </div>
+        <span class="tbl-name">interview_answers</span>
+        <span class="tbl-badge">STT Output</span>
+      </div>
+      <div class="tbl-body">
+        <div class="col-row">
+          <div class="col-key pk">PK</div>
+          <div class="col-name pk-name">id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">application_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">interview_question_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-row">
+          <div class="col-key fk">FK</div>
+          <div class="col-name fk-name">invite_token_id</div>
+          <div class="col-type">UUID <span class="not-null">NN</span></div>
+        </div>
+        <div class="col-sep"></div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">answer_text</div>
+          <div class="col-type">TEXT</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">score</div>
+          <div class="col-type">NUMERIC(5,2)</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">duration_ms</div>
+          <div class="col-type">INTEGER</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">is_timed_out</div>
+          <div class="col-type">BOOLEAN DEFAULT false</div>
+        </div>
+        <div class="col-row">
+          <div class="col-key empty"></div>
+          <div class="col-name">recorded_at</div>
+          <div class="col-type">TIMESTAMPTZ <span class="not-null">NN</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end canvas -->
+</div><!-- end canvas-wrap -->
+
+<script>
+/* ============================================================
+   ZOOM / PAN STATE
+   ============================================================ */
+let scale  = 0.80;
+let tx     = 40;
+let ty     = 20;
+let isDragging = false;
+let lastX = 0, lastY = 0;
+
+const canvas   = document.getElementById('canvas');
+const wrap     = document.getElementById('canvasWrap');
+const zoomVal  = document.getElementById('zoomVal');
+const tooltip  = document.getElementById('tooltip');
+
+function applyTransform() {
+  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  zoomVal.textContent    = Math.round(scale * 100) + '%';
+}
+
+function changeZoom(delta) {
+  scale = Math.min(2, Math.max(0.3, scale + delta));
+  applyTransform();
+}
+
+function resetView() {
+  scale = 0.80; tx = 40; ty = 20;
+  applyTransform();
+}
+
+/* Wheel zoom */
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.08 : 0.08;
+  scale = Math.min(2, Math.max(0.3, scale + delta));
+  applyTransform();
+}, { passive: false });
+
+/* Pan */
+wrap.addEventListener('mousedown', e => {
+  if (e.target.closest('.tbl')) return;
+  isDragging = true;
+  lastX = e.clientX; lastY = e.clientY;
+  wrap.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  tx += e.clientX - lastX;
+  ty += e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  applyTransform();
+});
+
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  wrap.style.cursor = 'grab';
+});
+
+applyTransform();
+
+/* ============================================================
+   RELATION LINES
+   ============================================================ */
+
+/*
+  Each relation: { from: tableId, to: tableId, fromSide: 'right'|'left'|'bottom'|'top',
+                   toSide: ..., label: '1:N', colour: '#hex', note: '...' }
+  Positions are computed after DOM layout.
+*/
+const relations = [
+  // companies -> users (1:N)
+  { from:'tbl-companies', to:'tbl-users',       fromSide:'bottom', toSide:'top',
+    label:'1:N', colour:'rgba(56,189,248,0.5)', note:'One company has many HR users' },
+
+  // companies -> jobs (1:N)
+  { from:'tbl-companies', to:'tbl-jobs',         fromSide:'right',  toSide:'left',
+    label:'1:N', colour:'rgba(56,189,248,0.5)', note:'One company posts many jobs' },
+
+  // companies -> candidates (1:N)
+  { from:'tbl-companies', to:'tbl-candidates',   fromSide:'right',  toSide:'left',
+    label:'1:N', colour:'rgba(56,189,248,0.4)', note:'Candidates scoped to tenant' },
+
+  // jobs -> applications (1:N)
+  { from:'tbl-jobs',      to:'tbl-applications', fromSide:'bottom', toSide:'top',
+    label:'1:N', colour:'rgba(74,222,128,0.5)', note:'One job receives many applications' },
+
+  // candidates -> applications (1:N)
+  { from:'tbl-candidates',to:'tbl-applications', fromSide:'right',  toSide:'left',
+    label:'1:N', colour:'rgba(74,222,128,0.5)', note:'One candidate can apply to many jobs' },
+
+  // jobs -> interviews (1:1)
+  { from:'tbl-jobs',      to:'tbl-interviews',   fromSide:'right',  toSide:'left',
+    label:'1:1', colour:'rgba(251,146,60,0.5)', note:'Each job has one interview config (UNIQUE FK on job_id)' },
+
+  // interviews -> interview_questions (1:N)
+  { from:'tbl-interviews', to:'tbl-interview_questions', fromSide:'right', toSide:'left',
+    label:'1:N', colour:'rgba(251,146,60,0.5)', note:'One interview config holds many ordered questions' },
+
+  // questions -> interview_questions (1:N)
+  { from:'tbl-questions',  to:'tbl-interview_questions', fromSide:'right', toSide:'left',
+    label:'1:N', colour:'rgba(167,139,250,0.5)', note:'One question can be used in many interview configs' },
+
+  // applications -> invite_tokens (1:N)
+  { from:'tbl-applications', to:'tbl-invite_tokens', fromSide:'bottom', toSide:'top',
+    label:'1:N', colour:'rgba(244,114,182,0.5)', note:'One application can have multiple tokens (resend support)' },
+
+  // interviews -> invite_tokens (1:N)
+  { from:'tbl-interviews',   to:'tbl-invite_tokens', fromSide:'bottom', toSide:'top',
+    label:'1:N', colour:'rgba(251,146,60,0.4)', note:'Token references the specific interview config' },
+
+  // applications -> interview_answers (1:N)
+  { from:'tbl-applications',       to:'tbl-interview_answers', fromSide:'right', toSide:'left',
+    label:'1:N', colour:'rgba(244,114,182,0.5)', note:'One application session has many answer records' },
+
+  // interview_questions -> interview_answers (1:N)
+  { from:'tbl-interview_questions', to:'tbl-interview_answers', fromSide:'bottom', toSide:'top',
+    label:'1:N', colour:'rgba(251,146,60,0.5)', note:'Each question slot receives one answer per session' },
+
+  // invite_tokens -> interview_answers (1:N)
+  { from:'tbl-invite_tokens', to:'tbl-interview_answers', fromSide:'right', toSide:'left',
+    label:'1:N', colour:'rgba(244,114,182,0.4)', note:'Answers are tied to the token that initiated the session' },
+];
+
+/* Compute table bounding boxes relative to canvas */
+function getBox(id) {
+  const el = document.getElementById(id);
+  return {
+    x: parseInt(el.style.left),
+    y: parseInt(el.style.top),
+    w: el.offsetWidth,
+    h: el.offsetHeight,
+  };
+}
+
+function getSidePoint(box, side) {
+  switch(side) {
+    case 'top':    return { x: box.x + box.w / 2, y: box.y };
+    case 'bottom': return { x: box.x + box.w / 2, y: box.y + box.h };
+    case 'left':   return { x: box.x,              y: box.y + box.h / 2 };
+    case 'right':  return { x: box.x + box.w,      y: box.y + box.h / 2 };
+  }
+}
+
+/* Draw a smooth cubic bezier between two points */
+function makePath(p1, p2, fromSide, toSide) {
+  const dx = Math.abs(p2.x - p1.x);
+  const dy = Math.abs(p2.y - p1.y);
+  const cx = Math.min(120, dx * 0.5);
+  const cy = Math.min(80,  dy * 0.5);
+
+  let c1x = p1.x, c1y = p1.y;
+  let c2x = p2.x, c2y = p2.y;
+
+  if (fromSide === 'right')  c1x += cx;
+  if (fromSide === 'left')   c1x -= cx;
+  if (fromSide === 'bottom') c1y += cy;
+  if (fromSide === 'top')    c1y -= cy;
+
+  if (toSide === 'left')   c2x -= cx;
+  if (toSide === 'right')  c2x += cx;
+  if (toSide === 'top')    c2y -= cy;
+  if (toSide === 'bottom') c2y += cy;
+
+  return `M ${p1.x} ${p1.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+}
+
+/* Small circle marker at endpoints */
+function circleEl(x, y, colour) {
+  const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx', x); c.setAttribute('cy', y);
+  c.setAttribute('r', 4);
+  c.setAttribute('fill', colour);
+  c.setAttribute('stroke', 'rgba(0,0,0,0.4)');
+  c.setAttribute('stroke-width', '1');
+  return c;
+}
+
+function drawRelations() {
+  const svg = document.getElementById('relSvg');
+  svg.innerHTML = '';
+
+  /* Defs: arrowhead marker */
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML = `
+    <marker id="arrow-head" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="rgba(255,255,255,0.25)"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  relations.forEach((rel, i) => {
+    const fromBox = getBox(rel.from);
+    const toBox   = getBox(rel.to);
+
+    const p1 = getSidePoint(fromBox, rel.fromSide);
+    const p2 = getSidePoint(toBox,   rel.toSide);
+
+    const d = makePath(p1, p2, rel.fromSide, rel.toSide);
+
+    /* Path */
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', rel.colour);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('marker-end', 'url(#arrow-head)');
+    path.style.cursor = 'pointer';
+
+    /* Hover interaction */
+    path.addEventListener('mouseenter', e => {
+      path.setAttribute('stroke-width', '2.5');
+      tooltip.textContent = `${rel.from.replace('tbl-','')} → ${rel.to.replace('tbl-','')}  (${rel.label})  —  ${rel.note}`;
+      tooltip.classList.add('visible');
+    });
+    path.addEventListener('mousemove', e => {
+      const rect = wrap.getBoundingClientRect();
+      tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+      tooltip.style.top  = (e.clientY - rect.top  + 12) + 'px';
+    });
+    path.addEventListener('mouseleave', () => {
+      path.setAttribute('stroke-width', '1.5');
+      tooltip.classList.remove('visible');
+    });
+
+    svg.appendChild(path);
+
+    /* Endpoint dots */
+    svg.appendChild(circleEl(p1.x, p1.y, rel.colour));
+    svg.appendChild(circleEl(p2.x, p2.y, rel.colour));
+
+    /* Cardinality label at midpoint */
+    const mx = (p1.x + p2.x) / 2;
+    const my = (p1.y + p2.y) / 2;
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', mx);
+    txt.setAttribute('y', my - 6);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('class', 'card-label');
+    txt.setAttribute('fill', rel.colour);
+    txt.textContent = rel.label;
+    svg.appendChild(txt);
+  });
+}
+
+/* Draw after layout settles */
+window.addEventListener('load', () => {
+  setTimeout(drawRelations, 100);
+});
+
+/* Redraw on window resize */
+window.addEventListener('resize', drawRelations);
+</script>
+</body>
+</html>
