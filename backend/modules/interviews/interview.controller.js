@@ -62,3 +62,29 @@ export const cancelInterview = async (req, res) => {
         handleError(res, error);
     }
 };
+
+// Public — candidate verifies their PIN before the interview starts
+export const verifyPin = async (req, res) => {
+    try {
+        const { pin } = req.body;
+
+        if (!pin) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'PIN is required' });
+        }
+
+        const data = await interviewService.verifyPin(req.params.token, pin);
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+// Public — candidate marks interview as completed after answering all questions
+export const completeInterview = async (req, res) => {
+    try {
+        const data = await interviewService.completeInterview(req.params.token);
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};

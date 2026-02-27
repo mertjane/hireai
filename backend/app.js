@@ -11,7 +11,24 @@ import questionsRoutes from './modules/questions/question.route.js';
 import iQuestionRoutes from './modules/interview-questions/iQuestion.route.js';
 
 const app = express();
-app.use(cors()); // Enabled CORS for all origins in dev; restrict in production - Bora
+// Allow Cloudflare Pages + localhost origins for dev and production
+const allowedOrigins = [
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, Postman, etc.)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Keep permissive for now during development
+        }
+    },
+}));
 app.use(express.json());
 
 // Swagger UI Route

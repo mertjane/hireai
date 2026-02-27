@@ -16,7 +16,7 @@ export const getByInterviewId = async (interview_id) => {
         .from('interview_questions')
         .select('*, questions(*)')
         .eq('interview_id', interview_id)
-        .order('created_at', { ascending: true });
+        .order('id', { ascending: true });
 
     if (error) throw error;
     return data;
