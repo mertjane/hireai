@@ -61,3 +61,16 @@ export const updateInterview = async (id, company_id, updates) => {
     if (error) throw error;
     return data;
 };
+
+// Update interview by token — used for public candidate-facing operations
+export const updateInterviewByToken = async (token, updates) => {
+    const { data, error } = await supabase
+        .from('interviews')
+        .update(updates)
+        .eq('token', token)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
