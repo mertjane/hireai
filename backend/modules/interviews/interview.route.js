@@ -6,6 +6,8 @@ const router = express.Router();
 
 // Public — candidate accesses interview via token link
 router.get('/token/:token', interviewController.getInterviewByToken);
+router.post('/token/:token/verify-pin', interviewController.verifyPin);
+router.post('/token/:token/complete', interviewController.completeInterview);
 
 // Protected — company operations
 router.use(authenticate);

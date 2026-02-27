@@ -1,5 +1,4 @@
-// Backend API base URL for all auth requests - Bora
-const API_BASE = 'http://localhost:4000/api/v1';
+// Use shared API_BASE from config.js (loaded via script tag before this file)
 
 function toggleForms() {
     document.getElementById("loginForm").classList.toggle("hidden");

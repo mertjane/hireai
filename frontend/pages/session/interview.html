@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireAI — Interview Session</title>
+    <link rel="stylesheet" href="interview.css">
+</head>
+<body>
+
+    <!-- 1. Loading screen -->
+    <section data-screen="loading" class="screen active">
+        <div class="container center">
+            <div class="spinner"></div>
+            <p class="loading-text">Loading your interview...</p>
+        </div>
+    </section>
+
+    <!-- 2. Error screen -->
+    <section data-screen="error" class="screen">
+        <div class="container center">
+            <div class="icon-circle error-icon">!</div>
+            <h1>Something went wrong</h1>
+            <p id="error-message">This interview link is invalid or has been revoked.</p>
+        </div>
+    </section>
+
+    <!-- 3. Too early screen -->
+    <section data-screen="too-early" class="screen">
+        <div class="container center">
+            <div class="icon-circle clock-icon">&#9201;</div>
+            <h1>You're early!</h1>
+            <p>Your interview is scheduled for:</p>
+            <p class="scheduled-date" id="early-date"></p>
+            <p class="hint">Please come back closer to your scheduled time.</p>
+        </div>
+    </section>
+
+    <!-- 4. Too late screen -->
+    <section data-screen="too-late" class="screen">
+        <div class="container center">
+            <div class="icon-circle error-icon">!</div>
+            <h1>Interview Expired</h1>
+            <p>This interview session has passed. Please contact the hiring team for a new link.</p>
+        </div>
+    </section>
+
+    <!-- 5. Waiting room — countdown + PIN input -->
+    <section data-screen="waiting" class="screen">
+        <div class="container center">
+            <h1>Waiting Room</h1>
+            <p class="hint">Your interview starts in:</p>
+            <div class="countdown" id="waiting-countdown">--:--:--</div>
+
+            <div class="pin-section">
+                <p class="pin-label">Enter your 6-digit PIN to verify</p>
+                <div class="pin-boxes" id="pin-boxes">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="0" autocomplete="off">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="1" autocomplete="off">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="2" autocomplete="off">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="3" autocomplete="off">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="4" autocomplete="off">
+                    <input type="text" maxlength="1" inputmode="numeric" class="pin-box" data-index="5" autocomplete="off">
+                </div>
+                <p class="pin-error" id="pin-error"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. PIN verified screen — keep counting down -->
+    <section data-screen="verified" class="screen">
+        <div class="container center">
+            <div class="icon-circle success-icon">&#10003;</div>
+            <h1>All Set!</h1>
+            <p class="hint">Your interview starts in:</p>
+            <div class="countdown" id="verified-countdown">--:--:--</div>
+            <p class="hint">Stay on this page. It will begin automatically.</p>
+        </div>
+    </section>
+
+    <!-- 7. Mic-test screen — shown after PIN verified, before questions start -->
+    <section data-screen="mic-test" class="screen">
+        <div class="container center">
+            <h1>Welcome! Let's test your microphone</h1>
+            <p class="hint">Click "Start Test" and say a few words to make sure your mic is working.</p>
+
+            <button class="btn-start-test" id="btn-start-test">Start Test</button>
+
+            <div class="mic-test-area" id="mic-test-area" style="display:none;">
+                <p class="mic-test-label">What we hear:</p>
+                <div class="mic-test-preview" id="mic-test-preview"></div>
+                <div class="mic-test-status" id="mic-test-status"></div>
+            </div>
+
+            <p class="mic-test-timer" id="mic-test-timer"></p>
+
+            <button class="btn-start-interview" id="btn-start-interview" disabled>Start Interview</button>
+        </div>
+    </section>
+
+    <!-- 8. Break screen — 30s pause between questions -->
+    <section data-screen="break" class="screen">
+        <div class="container center">
+            <h1>Get ready for the next question</h1>
+            <p class="break-question-counter" id="break-question-counter">Next: Question 2 / 5</p>
+
+            <div class="break-bar-container">
+                <div class="break-bar-fill" id="break-bar-fill"></div>
+            </div>
+            <p class="break-timer-text" id="break-timer-text">30</p>
+
+            <button class="btn-skip-break" id="btn-skip-break">Skip — I'm Ready</button>
+        </div>
+    </section>
+
+    <!-- 9. Interview active screen -->
+    <section data-screen="interview" class="screen">
+        <div class="container">
+            <div class="interview-header">
+                <span class="question-counter" id="question-counter">Question 1 / 5</span>
+                <span class="question-timer" id="question-timer">02:00</span>
+            </div>
+
+            <!-- Question transition overlay -->
+            <div class="transition-overlay" id="transition-overlay">
+                <p class="transition-text" id="transition-text">Question 1</p>
+            </div>
+
+            <div class="question-area" id="question-area">
+                <p class="question-text" id="question-text"></p>
+
+                <button class="btn-replay" id="btn-replay" title="Replay question audio">&#9654; Replay</button>
+
+                <div class="recording-indicator" id="recording-indicator">
+                    <span class="rec-dot"></span> Listening...
+                </div>
+
+                <!-- Mic warning — shown when microphone access is unavailable -->
+                <div class="mic-warning" id="mic-warning" style="display:none;">
+                    Microphone access is required. Please allow microphone permission and reload.
+                </div>
+
+                <p class="transcript" id="transcript"></p>
+
+                <button class="btn-submit" id="btn-submit" style="display:none;">Submit Answer</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 10. Completed screen -->
+    <section data-screen="completed" class="screen">
+        <div class="container center">
+            <div class="icon-circle success-icon">&#10003;</div>
+            <h1>Interview Complete</h1>
+            <p>Thank you for completing your interview. The hiring team will review your responses.</p>
+            <p class="hint">You may close this tab.</p>
+        </div>
+    </section>
+
+    <script src="../../config.js"></script>
+    <script src="interview.js"></script>
+</body>
+</html>
