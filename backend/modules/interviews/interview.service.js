@@ -33,9 +33,13 @@ export const getInterviewByToken = async (token) => {
     if (!interview) throw createError('Interview not found', HTTP_STATUS.NOT_FOUND);
     if (interview.token_revoke) throw createError('This interview link has been revoked', HTTP_STATUS.UNAUTHORIZED);
 
-    // Strip pin from public response so candidates cannot read it from the API
-    const { pin, ...safeInterview } = interview;
-    return safeInterview;
+    // Strip pin and flatten joined names into simple top-level fields
+    const { pin, candidates, companies, ...safeInterview } = interview;
+    return {
+        ...safeInterview,
+        candidate_name: candidates ? `${candidates.first_name} ${candidates.last_name}`.trim() : undefined,
+        company_name: companies?.name || undefined,
+    };
 };
 
 export const verifyPin = async (token, pin) => {

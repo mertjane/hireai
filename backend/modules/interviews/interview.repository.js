@@ -39,9 +39,10 @@ export const getInterviewById = async (id, company_id) => {
 };
 
 export const getInterviewByToken = async (token) => {
+    // join candidates and companies to get display names for the interview UI
     const { data, error } = await supabase
         .from('interviews')
-        .select('*')
+        .select('*, candidates(first_name, last_name), companies(name)')
         .eq('token', token)
         .maybeSingle();
 
