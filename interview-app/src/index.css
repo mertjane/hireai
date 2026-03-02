@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Soft Dark theme (Vercel / GitHub inspired) ── */
+[data-theme="dark"] {
+  --color-primary: 9 9 11;
+  --color-secondary: 24 24 27;
+  --color-card: 39 39 42;
+  --color-accent: 99 102 241;
+  --color-accent-hover: 79 70 229;
+  --color-success: 34 197 94;
+  --color-error: 239 68 68;
+  --color-warning: 245 158 11;
+  --color-text-primary: 250 250 250;
+  --color-text-secondary: 161 161 170;
+
+  --glass-bg: rgba(39, 39, 42, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --mesh-a: rgba(99, 102, 241, 0.06);
+  --mesh-b: rgba(34, 197, 94, 0.04);
+}
+
+/* ── Clean Light theme (Notion / Linear inspired) ── */
+[data-theme="light"] {
+  --color-primary: 255 255 255;
+  --color-secondary: 244 244 245;
+  --color-card: 250 250 250;
+  --color-accent: 79 70 229;
+  --color-accent-hover: 67 56 202;
+  --color-success: 22 163 74;
+  --color-error: 220 38 38;
+  --color-warning: 217 119 6;
+  --color-text-primary: 24 24 27;
+  --color-text-secondary: 113 113 122;
+
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --mesh-a: rgba(79, 70, 229, 0.04);
+  --mesh-b: rgba(22, 163, 74, 0.03);
+}
+
+/* ── Base styles ── */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: rgb(var(--color-primary));
+  color: rgb(var(--color-text-primary));
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* subtle animated gradient mesh behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, var(--mesh-a) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 70%, var(--mesh-b) 0%, transparent 60%);
+  animation: mesh-drift 20s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes mesh-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-20px, 10px) scale(1.05); }
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* smooth progress bar fill for break screen */
+.break-bar-fill {
+  transition: width 1s linear;
+}
+
+/* dark scrollbar (light theme gets browser default) */
+[data-theme="dark"] ::-webkit-scrollbar { width: 6px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: rgb(9 9 11); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+
+/* ── Frosted glass card ── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+/* ── Sound wave bars for listening indicator ── */
+.wave-bar {
+  display: inline-block;
+  width: 3px;
+  border-radius: 2px;
+  background: rgb(var(--color-accent));
+  animation: wave 1.2s ease-in-out infinite;
+}
+.wave-bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+.wave-bar:nth-child(2) { height: 18px; animation-delay: 0.15s; }
+.wave-bar:nth-child(3) { height: 24px; animation-delay: 0.3s; }
+.wave-bar:nth-child(4) { height: 18px; animation-delay: 0.45s; }
+.wave-bar:nth-child(5) { height: 12px; animation-delay: 0.6s; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.5); opacity: 0.6; }
+  50%      { transform: scaleY(1); opacity: 1; }
+}
+
+/* ── Confetti for completion screen ── */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.confetti-piece {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  top: 0;
+  animation: confetti-fall 3s ease-in forwards;
+  pointer-events: none;
+}
