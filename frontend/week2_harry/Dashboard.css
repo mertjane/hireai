@@ -1,0 +1,28 @@
+style {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background:rgba(255, 255, 255, 0.562);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+}
+
+h1 {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 3px;
+}
