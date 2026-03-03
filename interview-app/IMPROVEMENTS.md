@@ -214,7 +214,48 @@ Structured list of all improvements, grouped by category. Each entry includes wh
 
 ---
 
-## Files Created (7)
+## Error Handling
+
+### Submission failure toast
+- **What:** Warning toast shown when an answer fails to reach the server. Message: "Answer saved locally. It will be sent when connection is restored."
+- **Why:** Candidates had no idea if their answer actually reached the backend.
+- **Files:** `src/App.tsx`, `src/components/Toast.tsx`
+
+### Error boundary
+- **What:** React error boundary wraps the entire app. On crash, shows a "Something went wrong" screen with a Reload button instead of a white page.
+- **Why:** Component crashes shouldn't kill the entire interview.
+- **Files:** `src/components/ErrorBoundary.tsx` (new), `src/main.tsx`
+
+---
+
+## UX — Welcome Screen
+
+### Estimated interview duration
+- **What:** Welcome screen now shows estimated total time next to question count, e.g. "5 questions (~12 min)". Calculated from per-question timers plus 30s breaks.
+- **Why:** Candidates should know how long the interview will take before starting.
+- **Files:** `src/App.tsx`, `src/components/screens/WelcomeScreen.tsx`
+
+---
+
+## Help & Feedback
+
+### Help button with email notification
+- **What:** Floating "?" button in the bottom-right during active interview screens. Opens a popup form where candidates describe their issue. Sends an email to the company's HR address via Resend. Rate limited to 3 requests per interview. Button hides after limit is reached.
+- **Why:** Candidates had no way to report technical issues during an interview.
+- **Files:** `src/components/HelpButton.tsx` (new), `src/App.tsx`, `src/lib/api.ts`
+- **Backend:** `interview.controller.js`, `interview.service.js`, `interview.route.js`, `smtp.service.js`, `email.templates.js`, `statusCodes.js`
+
+### Feedback with text comment
+- **What:** CompletedScreen now has a text comment field alongside star rating. Both are sent to the backend and stored in the interviews table (`feedback_rating`, `feedback_comment` columns). Feedback visibility controlled by sessionStorage — shows once per session, persists across page reload, resets for new interviews.
+- **Why:** Star ratings alone don't capture specific feedback. localStorage was problematic for multi-interview scenarios.
+- **Files:** `src/components/screens/CompletedScreen.tsx`, `src/lib/api.ts`
+- **Backend:** `interview.controller.js`, `interview.service.js`, `interview.route.js`
+
+---
+
+## Files Created (9)
+- `src/components/ErrorBoundary.tsx`
+- `src/components/HelpButton.tsx`
 - `src/contexts/ThemeContext.tsx`
 - `src/components/ThemeToggle.tsx`
 - `src/components/StepperBar.tsx`

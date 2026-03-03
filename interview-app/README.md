@@ -77,6 +77,30 @@ Set `VITE_API_URL` in the Cloudflare Pages dashboard under **Settings > Environm
 
 If both backend and frontend are on Railway, use the backend's internal or public Railway URL as `VITE_API_URL`.
 
+## Backend Environment Variables
+
+The backend needs these additional variables for email features (help requests, application confirmations):
+
+| Variable | Description | Example |
+|---|---|---|
+| `RESEND_API_KEY` | API key from [Resend](https://resend.com) | `re_xxxxxxxx` |
+| `RESEND_FROM_EMAIL` | Verified sender address in Resend | `hireai@yourdomain.com` |
+
+Without these, the app still works — email features are skipped with a console warning.
+
+For Railway: go to your backend service → **Variables** tab → add both.
+
+For local dev: add them to `backend/.env`.
+
+### Supabase Columns
+
+The interviews table needs these columns for feedback and help features to work:
+
+- `feedback_rating` (integer, nullable) — candidate star rating after interview
+- `feedback_comment` (text, nullable) — optional text feedback from candidate
+
+Add them via Supabase dashboard SQL Editor if not already present.
+
 ## Project Structure
 
 ```

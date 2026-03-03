@@ -1,3 +1,51 @@
+// Sent to company HR when a candidate requests help during an interview
+export const helpRequestTemplate = ({ candidateName, companyName, message, sentAt }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Help Request – HireAI</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f4f6;padding:48px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);border-radius:16px 16px 0 0;padding:28px 48px;text-align:center;">
+              <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:800;">Interview Help Request</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:40px 48px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+              <p style="color:#111827;font-size:15px;line-height:1.65;margin:0 0 20px;">
+                <strong>${candidateName}</strong> needs assistance during their interview at <strong>${companyName}</strong>.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:20px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="color:#6b7280;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">Message</p>
+                    <p style="color:#111827;font-size:14px;line-height:1.6;margin:0;">${message}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="color:#9ca3af;font-size:12px;margin:0;">Sent at ${sentAt}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 16px 16px;padding:20px 48px;text-align:center;">
+              <p style="color:#9ca3af;font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} HireAI</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
 export const applicationConfirmationTemplate = ({ firstName, jobTitle, companyName, appliedAt }) => `
 <!DOCTYPE html>
 <html lang="en">

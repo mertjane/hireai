@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
+import { submitFeedback } from '../../lib/api'
 
 const CONFETTI_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#a855f7']
 
-export function CompletedScreen() {
+interface Props {
+  token?: string
+}
+
+export function CompletedScreen({ token }: Props) {
   const [confetti, setConfetti] = useState<{ id: number; left: string; color: string; delay: string }[]>([])
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
+  const [comment, setComment] = useState('')
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
 
   // burst confetti on mount
   useEffect(() => {
@@ -21,21 +28,30 @@ export function CompletedScreen() {
     return () => clearTimeout(cleanup)
   }, [])
 
-  // check if they already submitted feedback earlier
+  // hide the form if feedback was already sent this session
   useEffect(() => {
     try {
-      if (localStorage.getItem('feedbackSubmitted') === 'true') {
+      if (sessionStorage.getItem('feedbackSubmitted') === 'true') {
         setFeedbackSubmitted(true)
       }
     } catch { /* ignore */ }
   }, [])
 
-  const handleRatingSubmit = () => {
+  const handleRatingSubmit = async () => {
     if (rating === 0) return
-    try {
-      localStorage.setItem('feedbackRating', String(rating))
-      localStorage.setItem('feedbackSubmitted', 'true')
-    } catch { /* ignore */ }
+    setSending(true)
+
+    // send to backend — localStorage no longer needed since backend stores it
+    if (token) {
+      try {
+        await submitFeedback(token, rating, comment.trim())
+      } catch { /* endpoint might not exist yet on some deployments */ }
+    }
+
+    // mark as submitted for this session so refresh doesn't re-show the form
+    try { sessionStorage.setItem('feedbackSubmitted', 'true') } catch { /* ignore */ }
+
+    setSending(false)
     setFeedbackSubmitted(true)
   }
 
@@ -83,13 +99,26 @@ export function CompletedScreen() {
                     </button>
                   ))}
                 </div>
+
+                {/* optional comment and submit — visible once a star is picked */}
                 {rating > 0 && (
-                  <button
-                    onClick={handleRatingSubmit}
-                    className="rounded-lg bg-accent px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
-                  >
-                    Submit Feedback
-                  </button>
+                  <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-3">
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Any additional comments? (optional)"
+                      rows={3}
+                      maxLength={500}
+                      className="w-full resize-none rounded-lg border border-secondary bg-card p-3 text-sm text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none"
+                    />
+                    <button
+                      onClick={handleRatingSubmit}
+                      disabled={sending}
+                      className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
+                    >
+                      {sending ? 'Sending...' : 'Submit Feedback'}
+                    </button>
+                  </div>
                 )}
               </>
             )}

@@ -8,6 +8,8 @@ const router = express.Router();
 router.get('/token/:token', interviewController.getInterviewByToken);
 router.post('/token/:token/verify-pin', interviewController.verifyPin);
 router.post('/token/:token/complete', interviewController.completeInterview);
+router.post('/token/:token/feedback', interviewController.submitFeedback);
+router.post('/token/:token/help', interviewController.submitHelpRequest);
 
 // Protected — company operations
 router.use(authenticate);
