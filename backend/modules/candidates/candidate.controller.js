@@ -3,6 +3,7 @@ import { HTTP_STATUS } from '../../constants/statusCodes.js';
 import { handleError } from '../../utils/error.util.js';
 import { uploadCV } from '../../utils/storage.util.js';
 import { sendApplicationConfirmation } from '../smtp/smtp.service.js';
+import { scoreCV } from '../scoring/scoring.service.js';
 
 export const createCandidate = async (req, res) => {
     try {
@@ -28,6 +29,17 @@ export const createCandidate = async (req, res) => {
             jobTitle: job_title ?? 'the position',
             companyName: company_name ?? 'the company',
         }).catch((err) => console.error('[email] Failed to send confirmation:', err.message));
+
+        // Fire-and-forget — CV scoring runs in background, updates agg_score when done
+        if (req.file) {
+            scoreCV({
+                candidateId: data.id,
+                fileBuffer: req.file.buffer,
+                mimetype: req.file.mimetype,
+                job_id,
+                job_title,
+            }).catch((err) => console.error('[scoring] Failed to score CV:', err.message));
+        }
 
         res.status(HTTP_STATUS.CREATED).json(data);
     } catch (error) {

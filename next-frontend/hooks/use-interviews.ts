@@ -1,0 +1,8 @@
+import useSWR from 'swr'
+import type { Interview } from '@/types/interview'
+
+export const useInterviews = (jobId?: string | null) => {
+  const key = jobId ? `/interviews?job_id=${jobId}` : null
+  const { data, isLoading, mutate } = useSWR<Interview[]>(key)
+  return { interviews: data ?? [], isLoading, mutate }
+}

@@ -19,8 +19,9 @@ export const createJob = async (req, res) => {
 
 export const getJobs = async (req, res) => {
     try {
-        const data = req.company
-            ? await jobsService.getJobs(req.company.id)
+        const { company_id } = req.query;
+        const data = company_id
+            ? await jobsService.getJobs(company_id)
             : await jobsService.getAllJobs();
         res.status(HTTP_STATUS.OK).json({ jobs: data });
     } catch (error) {

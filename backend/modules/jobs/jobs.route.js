@@ -4,7 +4,7 @@ import { authenticate } from '../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// Public routes — no auth required
+// Public — pass ?company_id=xxx to get company-specific jobs
 router.get('/', jobsController.getJobs);
 router.get('/:id', jobsController.getJob);
 

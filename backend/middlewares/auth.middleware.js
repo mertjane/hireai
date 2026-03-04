@@ -3,6 +3,26 @@ import supabase from '../config/db.js';
 import { createError } from '../utils/error.util.js';
 import { HTTP_STATUS } from '../constants/statusCodes.js';
 
+// Populates req.company if token is present, but never blocks the request
+export const optionalAuthenticate = async (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return next();
+
+        const decoded = await admin.auth().verifyIdToken(token);
+        const { data: company } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('firebase_uuid', decoded.uid)
+            .maybeSingle();
+
+        if (company) req.company = company;
+    } catch {
+        // ignore — treat as unauthenticated
+    }
+    next();
+};
+
 export const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
