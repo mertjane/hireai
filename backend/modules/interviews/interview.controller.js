@@ -4,13 +4,17 @@ import { handleError } from '../../utils/error.util.js';
 
 export const scheduleInterview = async (req, res) => {
     try {
-        const { candidate_id, job_id, scheduled_at, duration_minutes } = req.body;
+        const { candidate_id, job_id, scheduled_at, duration_minutes, job_title, company_name } = req.body;
 
         if (!candidate_id || !job_id || !scheduled_at) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Missing required fields' });
         }
 
-        const data = await interviewService.scheduleInterview(req.company.id, { candidate_id, job_id, scheduled_at, duration_minutes });
+        const data = await interviewService.scheduleInterview(req.company.id, {
+            candidate_id, job_id, scheduled_at, duration_minutes,
+            job_title,
+            company_name: company_name ?? req.company.name,
+        });
         res.status(HTTP_STATUS.CREATED).json(data);
     } catch (error) {
         handleError(res, error);

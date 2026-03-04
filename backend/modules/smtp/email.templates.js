@@ -1,3 +1,131 @@
+export const interviewInvitationTemplate = ({ firstName, jobTitle, companyName, interviewLink, scheduledAt, pin }) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Invitation – HireAI</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f4f6;padding:48px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;">
+
+          <!-- ── HEADER ── -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);border-radius:16px 16px 0 0;padding:36px 48px;text-align:center;">
+              <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:800;letter-spacing:-0.5px;">HireAI</h1>
+              <p style="color:rgba(255,255,255,0.75);margin:6px 0 0;font-size:13px;letter-spacing:0.3px;">Modern Recruitment Platform</p>
+            </td>
+          </tr>
+
+          <!-- ── MAIN ── -->
+          <tr>
+            <td style="background:#ffffff;padding:48px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+
+              <!-- Icon -->
+              <div style="text-align:center;margin-bottom:28px;">
+                <div style="display:inline-block;width:64px;height:64px;background:#f3f0ff;border-radius:50%;text-align:center;line-height:64px;">
+                  <span style="font-size:28px;">&#127909;</span>
+                </div>
+              </div>
+
+              <!-- Title -->
+              <h2 style="color:#111827;font-size:22px;font-weight:700;text-align:center;margin:0 0 10px;">
+                You're Invited to Interview!
+              </h2>
+              <p style="color:#6b7280;font-size:15px;line-height:1.65;text-align:center;margin:0 0 36px;">
+                Hi <strong style="color:#111827;">${firstName}</strong>, great news! <strong style="color:#111827;">${companyName}</strong> has invited you to a video interview for the <strong style="color:#111827;">${jobTitle}</strong> position.
+              </p>
+
+              <!-- Details card -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:32px;">
+                <tr>
+                  <td style="padding:20px 24px 4px;">
+                    <p style="color:#9ca3af;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin:0;">Interview Details</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 24px 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;">
+                          <span style="color:#6b7280;font-size:13px;">Position</span>
+                        </td>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;text-align:right;">
+                          <span style="color:#111827;font-size:13px;font-weight:600;">${jobTitle}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;">
+                          <span style="color:#6b7280;font-size:13px;">Company</span>
+                        </td>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;text-align:right;">
+                          <span style="color:#111827;font-size:13px;font-weight:600;">${companyName}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;">
+                          <span style="color:#6b7280;font-size:13px;">Scheduled</span>
+                        </td>
+                        <td style="padding:10px 0;border-bottom:1px solid #e5e7eb;text-align:right;">
+                          <span style="color:#111827;font-size:13px;font-weight:600;">${scheduledAt}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0;">
+                          <span style="color:#6b7280;font-size:13px;">Your Access PIN</span>
+                        </td>
+                        <td style="padding:10px 0;text-align:right;">
+                          <span style="color:#7c3aed;font-size:18px;font-weight:800;letter-spacing:4px;">${pin}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA Button -->
+              <div style="text-align:center;margin-bottom:32px;">
+                <a href="${interviewLink}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 44px;border-radius:12px;letter-spacing:0.3px;">
+                  Start Your Interview &rarr;
+                </a>
+              </div>
+
+              <!-- PIN notice -->
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;">
+                <p style="color:#92400e;font-size:13px;line-height:1.7;margin:0;">
+                  <strong>&#9888; Important:</strong> You will need your 6-digit PIN <strong style="letter-spacing:2px;">${pin}</strong> to access the interview. Keep this email safe and do not share your PIN with anyone.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- ── FOOTER ── -->
+          <tr>
+            <td style="background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 16px 16px;padding:28px 48px;text-align:center;">
+              <p style="color:#9ca3af;font-size:12px;line-height:1.6;margin:0 0 6px;">
+                This is an automated message — please do not reply to this email.
+              </p>
+              <p style="color:#9ca3af;font-size:12px;margin:0;">
+                &copy; ${new Date().getFullYear()} HireAI &nbsp;&middot;&nbsp;
+                <span style="color:#d1d5db;">noreply@hireai.com</span>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`;
+
 export const applicationConfirmationTemplate = ({ firstName, jobTitle, companyName, appliedAt }) => `
 <!DOCTYPE html>
 <html lang="en">
