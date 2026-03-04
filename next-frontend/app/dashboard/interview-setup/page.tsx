@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useQuestions } from '@/hooks/use-questions'
 import { useCandidates } from '@/hooks/use-candidates'
 import { apiInstance } from '@/services/config/axios.config'
+import { avatarColor, getJobChipColor } from '@/lib/colors'
 import type { Question } from '@/types/question'
 
 const ALL = 'all'
@@ -37,33 +38,6 @@ function catStyle(cat: string) {
   return catColorCache[cat]
 }
 
-const JOB_CHIPS = [
-  'bg-blue-400/15 text-blue-400',
-  'bg-violet-400/15 text-violet-400',
-  'bg-pink-400/15 text-pink-400',
-  'bg-amber-400/15 text-amber-400',
-  'bg-cyan-400/15 text-cyan-400',
-  'bg-emerald-400/15 text-emerald-400',
-]
-const jobChipCache: Record<string, string> = {}
-let jobChipIdx = 0
-function jobChip(jobId: string) {
-  if (!jobChipCache[jobId]) {
-    jobChipCache[jobId] = JOB_CHIPS[jobChipIdx % JOB_CHIPS.length]
-    jobChipIdx++
-  }
-  return jobChipCache[jobId]
-}
-
-const AVATAR_COLORS = [
-  'bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-red-500',
-]
-function avatarColor(str: string) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -348,7 +322,7 @@ export default function InterviewSetupPage() {
                 const initials = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase()
                 const color = avatarColor(c.id)
                 const job = jobs.find((j) => j.id === c.job_id)
-                const chip = jobChip(c.job_id)
+                const chip = getJobChipColor(c.job_id)
                 return (
                   <div
                     key={c.id}
@@ -382,7 +356,7 @@ export default function InterviewSetupPage() {
                           Interview Active
                         </span>
                       ) : job && (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block ${chip}`}>
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block ${chip.bg} ${chip.text}`}>
                           {job.title.length > 40 ? job.title.slice(0, 40) + '…' : job.title}
                         </span>
                       )}

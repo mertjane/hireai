@@ -7,49 +7,17 @@ import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
 import ApplicantDetailModal from '@/components/layout/dashboard/ApplicantDetailModal'
 import AddApplicantModal from '@/components/layout/dashboard/AddApplicantModal'
+import { avatarColor, getJobChipColor } from '@/lib/colors'
+import { formatDate } from '@/lib/date'
 import type { Candidate, CandidateStatus } from '@/types/candidate'
 import type { Job } from '@/types/job'
 
 const ALL = 'all'
 
-const AVATAR_COLORS = [
-  'bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-red-500',
-]
-
-const JOB_CHIP_COLORS = [
-  { bg: 'bg-blue-400/10',   text: 'text-blue-400' },
-  { bg: 'bg-violet-400/10', text: 'text-violet-400' },
-  { bg: 'bg-cyan-400/10',   text: 'text-cyan-400' },
-  { bg: 'bg-pink-400/10',   text: 'text-pink-400' },
-  { bg: 'bg-amber-400/10',  text: 'text-amber-400' },
-  { bg: 'bg-emerald-400/10',text: 'text-emerald-400' },
-]
-
 const STATUS_STYLES: Record<CandidateStatus, { dot: string; bg: string; text: string; label: string }> = {
   pending:     { dot: 'bg-gray-400',  bg: 'bg-gray-400/10',  text: 'text-gray-400',  label: 'PENDING INVITE' },
   in_progress: { dot: 'bg-amber-400', bg: 'bg-amber-400/10', text: 'text-amber-400', label: 'IN PROGRESS' },
   dismissed:   { dot: 'bg-red-400',   bg: 'bg-red-400/10',   text: 'text-red-400',   label: 'DISMISSED' },
-}
-
-function avatarColor(str: string) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-const jobColorCache: Record<string, (typeof JOB_CHIP_COLORS)[number]> = {}
-let jobColorIdx = 0
-function jobChipColor(jobId: string) {
-  if (!jobColorCache[jobId]) {
-    jobColorCache[jobId] = JOB_CHIP_COLORS[jobColorIdx % JOB_CHIP_COLORS.length]
-    jobColorIdx++
-  }
-  return jobColorCache[jobId]
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export default function ApplicantsPage() {
@@ -225,7 +193,7 @@ function ApplicantRow({
   const initials = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase()
   const color = avatarColor(c.id)
   const job = jobs.find((j) => j.id === c.job_id)
-  const chipColor = jobChipColor(c.job_id)
+  const chipColor = getJobChipColor(c.job_id)
 
   return (
     <div

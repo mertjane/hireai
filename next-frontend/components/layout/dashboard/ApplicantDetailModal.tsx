@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { X, Mail, Phone, Calendar, Briefcase, Sparkles, FileText } from 'lucide-react'
+import { avatarColor } from '@/lib/colors'
+import { formatDate } from '@/lib/date'
 import type { Candidate, CandidateStatus } from '@/types/candidate'
 import type { Job } from '@/types/job'
 
@@ -9,21 +11,6 @@ const STATUS_STYLES: Record<CandidateStatus, { dot: string; bg: string; text: st
   pending:     { dot: 'bg-gray-400',  bg: 'bg-gray-400/10',  text: 'text-gray-400',  label: 'Pending Invite' },
   in_progress: { dot: 'bg-amber-400', bg: 'bg-amber-400/10', text: 'text-amber-400', label: 'In Progress' },
   dismissed:   { dot: 'bg-red-400',   bg: 'bg-red-400/10',   text: 'text-red-400',   label: 'Dismissed' },
-}
-
-const AVATAR_COLORS = [
-  'bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-red-500',
-]
-
-function avatarColor(str: string) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 interface Props {

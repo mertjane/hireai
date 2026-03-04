@@ -6,20 +6,12 @@ import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
 import { useInterviews } from '@/hooks/use-interviews'
 import { useCandidates } from '@/hooks/use-candidates'
+import { avatarColor } from '@/lib/colors'
+import { formatDate } from '@/lib/date'
 import type { Interview } from '@/types/interview'
 import type { Candidate } from '@/types/candidate'
 
 const ALL = 'all'
-
-const AVATAR_COLORS = [
-  'bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-red-500',
-]
-function avatarColor(str: string) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
 
 function ScoreRing({ score }: { score: number }) {
   const r = 14
@@ -58,9 +50,6 @@ function getResultStatus(score: number): { label: string; dot: string; text: str
   return { label: 'REVIEW', dot: 'bg-gray-400', text: 'text-gray-400' }
 }
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-}
 
 export default function ResultsPage() {
   const { company } = useAuth()
