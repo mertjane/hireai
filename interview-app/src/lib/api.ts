@@ -42,6 +42,24 @@ export function completeInterview(token: string): Promise<Interview> {
   })
 }
 
+// Send candidate feedback (star rating + optional comment) after interview
+export function submitFeedback(token: string, rating: number, comment: string): Promise<void> {
+  return request(`${API_BASE}/interviews/token/${token}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feedback_rating: rating, feedback_comment: comment }),
+  })
+}
+
+// Send a help request during the interview — notifies the company via email
+export function submitHelpRequest(token: string, message: string): Promise<{ sent: boolean }> {
+  return request(`${API_BASE}/interviews/token/${token}/help`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  })
+}
+
 // Offline retry queue — stores failed answer submissions for later retry
 interface QueuedAnswer {
   questionId: string

@@ -83,6 +83,44 @@ export const verifyPin = async (req, res) => {
     }
 };
 
+// Public — candidate requests help during the interview
+export const submitHelpRequest = async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Message is required' });
+        }
+
+        // cap message length to prevent abuse
+        const sanitized = message.trim().slice(0, 500);
+
+        const data = await interviewService.submitHelpRequest(req.params.token, sanitized);
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+// Public — candidate submits feedback after finishing the interview
+export const submitFeedback = async (req, res) => {
+    try {
+        const { feedback_rating, feedback_comment } = req.body;
+
+        if (!feedback_rating || feedback_rating < 1 || feedback_rating > 5) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Rating must be between 1 and 5' });
+        }
+
+        const data = await interviewService.submitFeedback(req.params.token, {
+            feedback_rating,
+            feedback_comment: feedback_comment || null,
+        });
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
 // Public — candidate marks interview as completed after answering all questions
 export const completeInterview = async (req, res) => {
     try {

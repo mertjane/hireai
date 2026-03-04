@@ -7,6 +7,8 @@ import { ConnectionBanner } from './components/ConnectionBanner'
 import { ThemeToggle } from './components/ThemeToggle'
 import { StepperBar } from './components/StepperBar'
 import { CameraPreview } from './components/CameraPreview'
+import { HelpButton } from './components/HelpButton'
+import { Toast } from './components/Toast'
 
 import { LoadingScreen } from './components/screens/LoadingScreen'
 import { ErrorScreen } from './components/screens/ErrorScreen'
@@ -50,6 +52,9 @@ export default function App() {
   const [interview, setInterview] = useState<Interview | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [pinError, setPinError] = useState<string | null>(null)
+
+  // shown when an answer fails to reach the server
+  const [submitWarning, setSubmitWarning] = useState(false)
 
   // brute-force protection
   const [pinAttempts, setPinAttempts] = useState(0)
@@ -266,8 +271,10 @@ export default function App() {
       setQuestions((prev) => prev.map((item, i) => i === currentIndex ? { ...item, q_answer: answer } : item))
     } catch {
       api.enqueueAnswer(q.id, token, answer)
-      // still mark locally for UI consistency
+      // still mark locally so the stepper looks right
       setQuestions((prev) => prev.map((item, i) => i === currentIndex ? { ...item, q_answer: answer } : item))
+      // let the candidate know something went wrong
+      setSubmitWarning(true)
     }
 
     const nextIndex = currentIndex + 1
@@ -286,6 +293,12 @@ export default function App() {
   }, [])
 
   const isPinLocked = lockoutUntil > Date.now()
+
+  // rough time estimate: sum of question timers + 30s break between each
+  const estimatedMinutes = questions.length > 0
+    ? Math.ceil((questions.reduce((sum, q) => sum + (q.q_timer > 0 ? q.q_timer : 120), 0) + (questions.length - 1) * 30) / 60)
+    : undefined
+
   const showStepper = STEPPER_SCREENS.includes(screen) && questions.length > 0
   // show camera toggle during the active interview portion
   const showCamera = ['mic-test', 'question', 'break'].includes(screen)
@@ -294,8 +307,17 @@ export default function App() {
     <>
       <ThemeToggle />
       <ConnectionBanner />
+      {submitWarning && (
+        <Toast
+          message="Answer saved locally. It will be sent when connection is restored."
+          type="warning"
+          duration={5000}
+          onDismiss={() => setSubmitWarning(false)}
+        />
+      )}
       {showStepper && <StepperBar questions={questions} currentIndex={currentIndex} candidateName={interview?.candidate_name} />}
       {showCamera && <CameraPreview />}
+      {showCamera && <HelpButton token={token ?? undefined} />}
 
       {/* extra top padding when stepper is visible so content doesn't hide behind it */}
       <div className={showStepper ? 'pt-14' : ''}>
@@ -313,6 +335,7 @@ export default function App() {
               return (
                 <WelcomeScreen
                   questionCount={questions.length}
+                  estimatedMinutes={estimatedMinutes}
                   candidateName={interview?.candidate_name}
                   companyName={interview?.company_name}
                   jobTitle={interview?.job_title}
@@ -351,7 +374,7 @@ export default function App() {
                 />
               )
             case 'completed':
-              return <CompletedScreen />
+              return <CompletedScreen token={token ?? undefined} />
           }
         })()}
       </div>
