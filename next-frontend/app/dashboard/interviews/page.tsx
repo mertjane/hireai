@@ -1,0 +1,385 @@
+'use client'
+
+import { useState, useMemo, useCallback } from 'react'
+import { ChevronDown, Copy, Check, XCircle, ExternalLink, Search } from 'lucide-react'
+import { useJobs } from '@/hooks/use-jobs'
+import { useAuth } from '@/hooks/use-auth'
+import { useInterviews } from '@/hooks/use-interviews'
+import { useCandidates } from '@/hooks/use-candidates'
+import { apiInstance } from '@/services/config/axios.config'
+import { avatarColor } from '@/lib/colors'
+import { formatDate } from '@/lib/date'
+import type { InterviewStatus } from '@/types/interview'
+import type { Candidate } from '@/types/candidate'
+import type { Job } from '@/types/job'
+
+const ALL = 'all'
+
+// status tabs at the top of the table
+const TABS: { key: typeof ALL | InterviewStatus; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'scheduled', label: 'Scheduled' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+  { key: 'no_show', label: 'No Show' },
+]
+
+// visual config for each status
+const STATUS_STYLES: Record<InterviewStatus, { dot: string; text: string; label: string }> = {
+  scheduled:  { dot: 'bg-blue-400',   text: 'text-blue-400',   label: 'SCHEDULED' },
+  completed:  { dot: 'bg-[#4ade80]',  text: 'text-[#4ade80]',  label: 'COMPLETED' },
+  cancelled:  { dot: 'bg-gray-400',   text: 'text-gray-400',   label: 'CANCELLED' },
+  no_show:    { dot: 'bg-red-400',    text: 'text-red-400',    label: 'NO SHOW' },
+}
+
+// score ring used for completed interviews
+function ScoreRing({ score }: { score: number }) {
+  const r = 14
+  const circ = 2 * Math.PI * r
+  const offset = circ - (Math.min(score, 100) / 100) * circ
+  const color = score >= 70 ? '#4ade80' : score >= 50 ? '#facc15' : '#f87171'
+  return (
+    <div className="relative w-9 h-9 shrink-0">
+      <svg viewBox="0 0 32 32" className="w-full h-full -rotate-90">
+        <circle cx="16" cy="16" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+        <circle cx="16" cy="16" r={r} fill="none" stroke={color} strokeWidth="3"
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">
+        {score}%
+      </span>
+    </div>
+  )
+}
+
+function StatCard({ value, label, color }: { value: string | number; label: string; color?: string }) {
+  return (
+    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-5 flex-1 min-w-0">
+      <div className={`text-2xl font-bold ${color ?? 'text-white'}`}>{value}</div>
+      <div className="text-xs text-gray-500 mt-1">{label}</div>
+    </div>
+  )
+}
+
+export default function InterviewsPage() {
+  const { company } = useAuth()
+  const { jobs } = useJobs(company?.id ?? null)
+  const { interviews, isLoading, mutate } = useInterviews()
+  const { candidates } = useCandidates()
+
+  const [statusTab, setStatusTab] = useState<typeof ALL | InterviewStatus>(ALL)
+  const [jobFilter, setJobFilter] = useState(ALL)
+  const [search, setSearch] = useState('')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null)
+
+  // lookup maps for candidate and job names
+  const candidateMap = useMemo(() => {
+    const m: Record<string, Candidate> = {}
+    for (const c of candidates) m[c.id] = c
+    return m
+  }, [candidates])
+
+  const jobMap = useMemo(() => {
+    const m: Record<string, Job> = {}
+    for (const j of jobs) m[j.id] = j
+    return m
+  }, [jobs])
+
+  // filter interviews by active tab, job, and search
+  const filtered = useMemo(() => {
+    return interviews.filter((iv) => {
+      if (statusTab !== ALL && iv.status !== statusTab) return false
+      if (jobFilter !== ALL && iv.job_id !== jobFilter) return false
+      if (search) {
+        const c = candidateMap[iv.candidate_id]
+        const name = c ? `${c.first_name} ${c.last_name}`.toLowerCase() : ''
+        if (!name.includes(search.toLowerCase())) return false
+      }
+      return true
+    })
+  }, [interviews, statusTab, jobFilter, search, candidateMap])
+
+  // stats computed from all interviews (not filtered)
+  const stats = useMemo(() => {
+    const total = interviews.length
+    const scheduled = interviews.filter((i) => i.status === 'scheduled').length
+    const completed = interviews.filter((i) => i.status === 'completed').length
+    const cancelled = interviews.filter((i) => i.status === 'cancelled').length
+    const noShow = interviews.filter((i) => i.status === 'no_show').length
+    const completedWithScore = interviews.filter((i) => i.status === 'completed' && i.final_score > 0)
+    const avgScore = completedWithScore.length > 0
+      ? Math.round(completedWithScore.reduce((s, i) => s + i.final_score, 0) / completedWithScore.length)
+      : 0
+    return { total, scheduled, completed, cancelled, noShow, avgScore }
+  }, [interviews])
+
+  // tab counts for badges
+  const tabCounts = useMemo(() => ({
+    all: interviews.length,
+    scheduled: stats.scheduled,
+    completed: stats.completed,
+    cancelled: stats.cancelled,
+    no_show: stats.noShow,
+  }), [interviews.length, stats])
+
+  // build the interview link that candidates use
+  const getInterviewUrl = useCallback((token: string) => {
+    // the candidate-facing app is hosted separately
+    const base = process.env.NEXT_PUBLIC_INTERVIEW_APP_URL || 'https://interview.borasozer.com'
+    return `${base}?token=${token}`
+  }, [])
+
+  // copy interview link to clipboard
+  const handleCopy = useCallback(async (id: string, token: string) => {
+    await navigator.clipboard.writeText(getInterviewUrl(token))
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }, [getInterviewUrl])
+
+  // cancel a scheduled interview via the backend
+  const handleCancel = useCallback(async (id: string) => {
+    if (cancellingId) return
+    setCancellingId(id)
+    try {
+      await apiInstance.delete(`/interviews/${id}`)
+      mutate()
+    } catch {
+      // silently fail — user will see the status unchanged
+    } finally {
+      setCancellingId(null)
+    }
+  }, [cancellingId, mutate])
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Interviews</h2>
+          <p className="text-gray-500 text-sm mt-1">Track and manage all interviews</p>
+        </div>
+      </div>
+
+      {/* stat cards */}
+      <div className="flex gap-4">
+        <StatCard value={stats.total} label="Total" />
+        <StatCard value={stats.scheduled} label="Scheduled" color="text-blue-400" />
+        <StatCard value={stats.completed} label="Completed" color="text-[#4ade80]" />
+        <StatCard value={`${stats.avgScore}%`} label="Avg. Score" color="text-[#4ade80]" />
+        <StatCard value={stats.noShow} label="No Show" color="text-red-400" />
+      </div>
+
+      {/* filters row */}
+      <div className="flex items-center gap-3">
+        {/* search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search candidates..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#0D1117] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/15 transition-colors"
+          />
+        </div>
+
+        {/* job filter */}
+        <div className="relative">
+          <select
+            value={jobFilter}
+            onChange={(e) => setJobFilter(e.target.value)}
+            className="appearance-none bg-[#0D1117] border border-white/5 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/15 cursor-pointer"
+          >
+            <option value={ALL}>All Jobs</option>
+            {jobs.map((j) => (
+              <option key={j.id} value={j.id}>{j.title}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* status tabs */}
+      <div className="flex gap-1 bg-[#0D1117] border border-white/5 rounded-xl p-1 w-fit">
+        {TABS.map((tab) => {
+          const active = statusTab === tab.key
+          const count = tabCounts[tab.key]
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setStatusTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                active ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {tab.label}
+              {count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  active ? 'bg-white/10 text-gray-300' : 'bg-white/5 text-gray-600'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* table */}
+      <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
+        {/* table header */}
+        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] px-5 py-3 border-b border-white/5">
+          {['CANDIDATE', 'POSITION', 'SCHEDULED', 'DURATION', 'SCORE', 'STATUS'].map((h) => (
+            <span key={h} className="text-[10px] font-semibold text-gray-500 tracking-widest">{h}</span>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className="flex flex-col">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] px-5 py-4 border-b border-white/5 gap-4">
+                {Array.from({ length: 6 }).map((__, j) => (
+                  <div key={j} className="h-4 bg-white/5 rounded animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center h-48 text-gray-600 text-sm">
+            No interviews found.
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {filtered.map((iv) => {
+              const candidate = candidateMap[iv.candidate_id]
+              const job = jobMap[iv.job_id]
+              const fullName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'Unknown'
+              const initials = candidate
+                ? `${candidate.first_name[0]}${candidate.last_name[0]}`.toUpperCase()
+                : '??'
+              const color = avatarColor(iv.candidate_id)
+              const st = STATUS_STYLES[iv.status]
+              const hasScore = iv.status === 'completed' && iv.final_score > 0
+
+              return (
+                <div
+                  key={iv.id}
+                  className="group grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                >
+                  {/* candidate */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white leading-tight truncate">{fullName}</p>
+                      {candidate && <p className="text-xs text-gray-500 truncate">{candidate.email}</p>}
+                    </div>
+                  </div>
+
+                  {/* position */}
+                  <span className="text-sm text-gray-400 truncate">{job?.title ?? '—'}</span>
+
+                  {/* scheduled date */}
+                  <span className="text-sm text-gray-400">{formatDate(iv.scheduled_at)}</span>
+
+                  {/* duration */}
+                  <span className="text-sm text-gray-400">{iv.duration_minutes}m</span>
+
+                  {/* score */}
+                  <div className="flex items-center gap-2">
+                    {hasScore ? (
+                      <>
+                        <ScoreRing score={iv.final_score} />
+                        <span className="text-sm font-medium text-white">{iv.final_score}%</span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-600">—</span>
+                    )}
+                  </div>
+
+                  {/* status + actions */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${st.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                      {st.label}
+                    </span>
+
+                    {/* action icons — only visible on hover */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* copy link — only for active (non-revoked) interviews */}
+                      {iv.status === 'scheduled' && !iv.token_revoke && (
+                        <button
+                          onClick={() => handleCopy(iv.id, iv.token)}
+                          className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                          title="Copy interview link"
+                        >
+                          {copiedId === iv.id ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+
+                      {/* open interview link in new tab */}
+                      {iv.status === 'scheduled' && !iv.token_revoke && (
+                        <a
+                          href={getInterviewUrl(iv.token)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                          title="Open interview link"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      {/* cancel — only for scheduled */}
+                      {iv.status === 'scheduled' && (
+                        <button
+                          onClick={() => setConfirmCancelId(iv.id)}
+                          disabled={cancellingId === iv.id}
+                          className="p-1 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                          title="Cancel interview"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* cancel confirmation modal */}
+      {confirmCancelId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-sm font-bold text-white mb-2">Cancel Interview?</h3>
+            <p className="text-xs text-gray-400 mb-5">This will revoke the interview link. The candidate will no longer be able to access it.</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmCancelId(null)}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Keep
+              </button>
+              <button
+                onClick={async () => {
+                  const id = confirmCancelId
+                  setConfirmCancelId(null)
+                  await handleCancel(id)
+                }}
+                className="px-4 py-2 bg-red-500/10 text-red-400 text-sm font-semibold rounded-xl hover:bg-red-500/20 transition-colors"
+              >
+                Cancel Interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useJobs } from "@/hooks/use-jobs";
-import { useCandidates } from "@/hooks/use-candidates";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -37,7 +36,6 @@ export default function Sidebar() {
           label: "Applicants",
           href: "/dashboard/applicants",
           icon: Users,
-          badge: 1,
         },
       ],
     },
@@ -50,8 +48,8 @@ export default function Sidebar() {
           icon: SlidersHorizontal,
         },
         {
-          label: "Interview Results",
-          href: "/dashboard/results",
+          label: "Interviews",
+          href: "/dashboard/interviews",
           icon: BarChart2,
         },
       ],

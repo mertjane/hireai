@@ -1,24 +1,13 @@
-import { useState, useEffect } from 'react'
-import { apiInstance } from '@/services/config/axios.config'
+import useSWR from 'swr'
 import type { Question } from '@/types/question'
 
+// fetch all questions from the bank — supports mutate for refresh after create
 export const useQuestions = () => {
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setIsLoading(true)
-    apiInstance
-      .get<Question[]>('/questions')
-      .then((r) => {
-        setQuestions(Array.isArray(r.data) ? r.data : [])
-      })
-      .catch((err) => {
-        setError(err?.response?.data?.error ?? err.message ?? 'Failed to load questions')
-      })
-      .finally(() => setIsLoading(false))
-  }, [])
-
-  return { questions, isLoading, error }
+  const { data, isLoading, error, mutate } = useSWR<Question[]>('/questions')
+  return {
+    questions: data ?? [],
+    isLoading,
+    error: error ? (error?.message ?? 'Failed to load questions') : null,
+    mutate,
+  }
 }

@@ -1,4 +1,8 @@
+'use client'
+
+import Link from 'next/link'
 import { Plus, Mail, BarChart2 } from 'lucide-react'
+import { useInterviews } from '@/hooks/use-interviews'
 
 const ACTIONS = [
   {
@@ -7,6 +11,7 @@ const ACTIONS = [
     iconColor: 'text-[#4ade80]',
     label: 'Create Job Post',
     description: 'Add a new vacancy',
+    href: '/dashboard/jobs',
   },
   {
     icon: Mail,
@@ -14,32 +19,48 @@ const ACTIONS = [
     iconColor: 'text-blue-400',
     label: 'Send Invite Links',
     description: 'Invite candidates to interview',
+    href: '/dashboard/interview-setup',
   },
   {
     icon: BarChart2,
     iconBg: 'bg-purple-500/10',
     iconColor: 'text-purple-400',
-    label: 'Review Results',
-    description: '89 completed interviews',
+    label: 'View Interviews',
+    // description is set dynamically below
+    description: '',
+    href: '/dashboard/interviews',
   },
 ]
 
 export default function QuickActions() {
+  const { interviews } = useInterviews()
+
+  // count completed interviews for the summary label
+  const completedCount = interviews.filter((i) => i.status === 'completed').length
+
   return (
     <div className="bg-[#0D1117] border border-white/5 rounded-xl p-5">
       <h2 className="font-semibold mb-4">Quick Actions</h2>
       <ul className="flex flex-col gap-2">
-        {ACTIONS.map(({ icon: Icon, iconBg, iconColor, label, description }) => (
+        {ACTIONS.map(({ icon: Icon, iconBg, iconColor, label, description, href }) => (
           <li key={label}>
-            <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/8 border border-white/5 hover:border-white/10 transition-colors text-left">
+            <Link
+              href={href}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/8 border border-white/5 hover:border-white/10 transition-colors text-left"
+            >
               <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0`}>
                 <Icon className={`w-4 h-4 ${iconColor}`} />
               </div>
               <div>
                 <div className="text-sm font-medium">{label}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{description}</div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {/* show real count for interviews action */}
+                  {label === 'View Interviews'
+                    ? `${completedCount} completed interview${completedCount !== 1 ? 's' : ''}`
+                    : description}
+                </div>
               </div>
-            </button>
+            </Link>
           </li>
         ))}
       </ul>

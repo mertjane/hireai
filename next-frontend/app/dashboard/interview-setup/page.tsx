@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock } from 'lucide-react'
+import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -81,7 +81,7 @@ export default function InterviewSetupPage() {
   const { company } = useAuth()
   const { jobs } = useJobs(company?.id ?? null)
   const [selectedJob, setSelectedJob] = useState<string>(ALL)
-  const { questions, isLoading: qLoading, error: qError } = useQuestions()
+  const { questions, isLoading: qLoading, error: qError, mutate: mutateQuestions } = useQuestions()
   const { candidates } = useCandidates(selectedJob === ALL ? undefined : selectedJob)
 
   const [checkedCandidates, setCheckedCandidates] = useState<Set<string>>(new Set())
@@ -108,21 +108,61 @@ export default function InterviewSetupPage() {
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ success: number; failed: number } | null>(null)
 
+  // holds the interview links created after sending
+  const [createdLinks, setCreatedLinks] = useState<{ name: string; url: string }[]>([])
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+
+  // question bank search and creation
+  const [qSearch, setQSearch] = useState('')
+  const [showCreateQ, setShowCreateQ] = useState(false)
+  const [newQText, setNewQText] = useState('')
+  const [newQCategory, setNewQCategory] = useState('')
+  const [creatingQ, setCreatingQ] = useState(false)
+
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const selectedJob_obj = useMemo(() => jobs.find((j) => j.id === selectedJob), [jobs, selectedJob])
 
+  // group questions by category, filtered by search term
   const grouped = useMemo(() => {
     const map: Record<string, Question[]> = {}
+    const term = qSearch.toLowerCase()
     for (const q of questions) {
+      // skip questions that don't match the search
+      if (term && !q.question.toLowerCase().includes(term) && !q.category.toLowerCase().includes(term)) continue
       const cat = q.category || 'GENERAL'
       if (!map[cat]) map[cat] = []
       map[cat].push(q)
     }
     return map
+  }, [questions, qSearch])
+
+  // existing categories for the dropdown when creating a new question
+  const existingCategories = useMemo(() => {
+    return Array.from(new Set(questions.map((q) => q.category).filter(Boolean)))
   }, [questions])
+
+  // create a new question and add it to the bank
+  const handleCreateQuestion = async () => {
+    if (!newQText.trim() || !newQCategory.trim() || creatingQ) return
+    setCreatingQ(true)
+    try {
+      await apiInstance.post('/questions', {
+        question: newQText.trim(),
+        category: newQCategory.trim(),
+      })
+      mutateQuestions()
+      setNewQText('')
+      setNewQCategory('')
+      setShowCreateQ(false)
+    } catch (err) {
+      console.error('[questions] create failed', err)
+    } finally {
+      setCreatingQ(false)
+    }
+  }
 
   const eligibleCandidates = candidates.filter((c) => c.status !== 'in_progress')
   const visibleChecked = eligibleCandidates.filter((c) => checkedCandidates.has(c.id)).length
@@ -177,18 +217,32 @@ export default function InterviewSetupPage() {
     setDragOverIdx(null)
   }
 
+  // build the interview URL candidates use to join
+  const getInterviewUrl = (token: string) => {
+    const base = process.env.NEXT_PUBLIC_INTERVIEW_APP_URL || 'https://interview.borasozer.com'
+    return `${base}?token=${token}`
+  }
+
+  const handleCopyLink = async (idx: number, url: string) => {
+    await navigator.clipboard.writeText(url)
+    setCopiedIdx(idx)
+    setTimeout(() => setCopiedIdx(null), 2000)
+  }
+
   const handleSendLinks = async () => {
     const targetCandidates = candidates.filter((c) => checkedCandidates.has(c.id))
     if (targetCandidates.length === 0 || selected.length === 0) return
 
     setSending(true)
     setSendResult(null)
+    setCreatedLinks([])
 
-    // 3-second deliberate delay for UX
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    // short delay so the overlay feels intentional
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     let success = 0
     let failed = 0
+    const links: { name: string; url: string }[] = []
 
     for (const candidate of targetCandidates) {
       try {
@@ -215,6 +269,12 @@ export default function InterviewSetupPage() {
             q_timer: timer,
           })
         }
+
+        // collect the link so HR can copy/share it
+        links.push({
+          name: `${candidate.first_name} ${candidate.last_name}`,
+          url: getInterviewUrl(interview.token),
+        })
         success++
       } catch (err) {
         console.error('[send] failed for candidate', candidate.id, err)
@@ -224,6 +284,7 @@ export default function InterviewSetupPage() {
 
     setSending(false)
     setSendResult({ success, failed })
+    setCreatedLinks(links)
     if (success > 0) {
       setCheckedCandidates(new Set())
       setSelected([])
@@ -270,17 +331,47 @@ export default function InterviewSetupPage() {
         </div>
       </div>
 
-      {/* Send result banner */}
+      {/* Send result banner with interview links */}
       {sendResult && (
-        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${sendResult.failed === 0 ? 'bg-[#4ade80]/10 border border-[#4ade80]/20 text-[#4ade80]' : 'bg-amber-400/10 border border-amber-400/20 text-amber-400'}`}>
-          <Check className="w-4 h-4 shrink-0" />
-          <span>
-            {sendResult.success > 0 && `Interview links sent to ${sendResult.success} candidate(s). `}
-            {sendResult.failed > 0 && `${sendResult.failed} failed — check console for details.`}
-          </span>
-          <button onClick={() => setSendResult(null)} className="ml-auto opacity-60 hover:opacity-100 transition-opacity">
-            <X className="w-4 h-4" />
-          </button>
+        <div className={`rounded-xl border text-sm ${sendResult.failed === 0 ? 'bg-[#4ade80]/10 border-[#4ade80]/20' : 'bg-amber-400/10 border-amber-400/20'}`}>
+          <div className={`flex items-center gap-3 px-4 py-3 ${sendResult.failed === 0 ? 'text-[#4ade80]' : 'text-amber-400'}`}>
+            <Check className="w-4 h-4 shrink-0" />
+            <span>
+              {sendResult.success > 0 && `Interview links created for ${sendResult.success} candidate(s). `}
+              {sendResult.failed > 0 && `${sendResult.failed} failed.`}
+            </span>
+            <button onClick={() => { setSendResult(null); setCreatedLinks([]) }} className="ml-auto opacity-60 hover:opacity-100 transition-opacity">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* show created links so HR can copy them */}
+          {createdLinks.length > 0 && (
+            <div className="px-4 pb-3 flex flex-col gap-2">
+              {createdLinks.map((link, i) => (
+                <div key={i} className="flex items-center gap-3 bg-black/20 rounded-lg px-3 py-2">
+                  <span className="text-xs text-white font-medium shrink-0">{link.name}</span>
+                  <span className="text-xs text-gray-500 truncate flex-1">{link.url}</span>
+                  <button
+                    onClick={() => handleCopyLink(i, link.url)}
+                    className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors shrink-0"
+                    title="Copy link"
+                  >
+                    {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors shrink-0"
+                    title="Open link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -514,7 +605,72 @@ export default function InterviewSetupPage() {
           {/* Question Bank */}
           <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
             <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
-              <h3 className="font-semibold text-sm">Question Bank</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-sm">Question Bank</h3>
+                <button
+                  onClick={() => setShowCreateQ(!showCreateQ)}
+                  className="w-6 h-6 rounded-lg bg-white/5 hover:bg-[#4ade80] hover:text-[#0A0D12] text-gray-400 flex items-center justify-center transition-colors"
+                  title="Add new question"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* search input */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search questions..."
+                  value={qSearch}
+                  onChange={(e) => setQSearch(e.target.value)}
+                  className="w-full bg-[#0A0D12] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors"
+                />
+              </div>
+
+              {/* new question form */}
+              {showCreateQ && (
+                <div className="mt-3 flex flex-col gap-2 p-3 bg-white/[0.03] border border-white/5 rounded-lg">
+                  <textarea
+                    value={newQText}
+                    onChange={(e) => setNewQText(e.target.value)}
+                    placeholder="Type your question..."
+                    rows={2}
+                    maxLength={500}
+                    className="w-full resize-none bg-[#0A0D12] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20"
+                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      list="category-list"
+                      value={newQCategory}
+                      onChange={(e) => setNewQCategory(e.target.value)}
+                      placeholder="Category (e.g. Technical)"
+                      className="w-full bg-[#0A0D12] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20"
+                    />
+                    <datalist id="category-list">
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCreateQuestion}
+                      disabled={!newQText.trim() || !newQCategory.trim() || creatingQ}
+                      className="flex-1 bg-[#4ade80] text-[#0A0D12] text-xs font-semibold py-1.5 rounded-lg hover:bg-[#22c55e] transition-colors disabled:opacity-40"
+                    >
+                      {creatingQ ? 'Adding...' : 'Add'}
+                    </button>
+                    <button
+                      onClick={() => { setShowCreateQ(false); setNewQText(''); setNewQCategory('') }}
+                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="overflow-y-auto max-h-[320px] p-4">
               {qLoading ? (

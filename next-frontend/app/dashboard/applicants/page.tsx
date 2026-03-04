@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Search, Download, UserPlus, ChevronDown } from 'lucide-react'
 import { useCandidates } from '@/hooks/use-candidates'
 import { useJobs } from '@/hooks/use-jobs'
@@ -26,6 +26,7 @@ export default function ApplicantsPage() {
   const [selectedJob, setSelectedJob] = useState<string>(ALL)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<CandidateStatus | 'all'>(ALL)
+  const [minScore, setMinScore] = useState(0)
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null)
   const [addOpen, setAddOpen] = useState(false)
 
@@ -42,10 +43,35 @@ export default function ApplicantsPage() {
         const name = `${c.first_name} ${c.last_name}`.toLowerCase()
         const matchSearch = name.includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase())
         const matchStatus = statusFilter === ALL || c.status === statusFilter
-        return matchSearch && matchStatus
+        // apply minimum score threshold when set
+        const matchScore = minScore === 0 || (c.agg_score ?? 0) >= minScore
+        return matchSearch && matchStatus && matchScore
       }),
-    [candidates, search, statusFilter]
+    [candidates, search, statusFilter, minScore]
   )
+
+  // export filtered candidates as a CSV file download
+  const handleExportCSV = useCallback(() => {
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Status', 'AI Score', 'Applied At']
+    const rows = filtered.map((c) => [
+      c.first_name,
+      c.last_name,
+      c.email,
+      c.phone,
+      c.status,
+      c.agg_score ?? '',
+      c.applied_at,
+    ])
+
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'applicants.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [filtered])
 
   const detailJob = useMemo(
     () => jobs.find((j) => j.id === detailCandidate?.job_id),
@@ -64,7 +90,10 @@ export default function ApplicantsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors"
+          >
             <Download className="w-4 h-4" />
             Export CSV
           </button>
@@ -115,6 +144,22 @@ export default function ApplicantsPage() {
             <option value="pending">Pending Invite</option>
             <option value="in_progress">In Progress</option>
             <option value="dismissed">Dismissed</option>
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+        </div>
+
+        {/* minimum score threshold filter */}
+        <div className="relative">
+          <select
+            value={minScore}
+            onChange={(e) => setMinScore(Number(e.target.value))}
+            className="appearance-none bg-[#0D1117] border border-white/5 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/15 transition-colors cursor-pointer"
+          >
+            <option value={0}>Min Score: Any</option>
+            <option value={30}>Min Score: 30+</option>
+            <option value={50}>Min Score: 50+</option>
+            <option value={70}>Min Score: 70+</option>
+            <option value={90}>Min Score: 90+</option>
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
         </div>

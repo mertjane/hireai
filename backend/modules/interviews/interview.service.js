@@ -143,5 +143,12 @@ export const updateInterview = async (id, company_id, updates) => {
 export const cancelInterview = async (id, company_id) => {
     const interview = await interviewRepo.getInterviewById(id, company_id);
     assertFound(interview);
+
+    // reset candidate status so they can be re-invited
+    if (interview.candidate_id) {
+        candidateRepo.updateCandidate(interview.candidate_id, company_id, { status: 'pending' })
+            .catch((err) => console.error('[interview] candidate status reset failed:', err.message));
+    }
+
     return await interviewRepo.updateInterview(id, company_id, { status: 'cancelled', token_revoke: true });
 };
