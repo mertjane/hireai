@@ -130,31 +130,23 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
           )}
         </div>
 
-        {/* score + answer count row */}
-        <div className="flex gap-3">
-          {interview.final_score > 0 ? (
-            <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5 flex-1">
-              <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
-              <div className="flex items-end gap-1.5">
-                <span className={`text-2xl font-bold ${interview.final_score >= 70 ? 'text-[#4ade80]' : interview.final_score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
-                  {interview.final_score}
-                </span>
-                <span className="text-xs text-gray-500 mb-0.5">/ 100</span>
-              </div>
+        {/* score card — only shown when there's a score or completed */}
+        {interview.final_score > 0 ? (
+          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
+            <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
+            <div className="flex items-end gap-1.5">
+              <span className={`text-2xl font-bold ${interview.final_score >= 70 ? 'text-[#4ade80]' : interview.final_score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                {interview.final_score}
+              </span>
+              <span className="text-xs text-gray-500 mb-0.5">/ 100</span>
             </div>
-          ) : interview.status === 'completed' && (
-            <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5 flex-1">
-              <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
-              <span className="text-sm text-gray-500">Not scored yet</span>
-            </div>
-          )}
-          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5 flex-1">
-            <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">ANSWERS</p>
-            <span className="text-xl font-bold text-white">
-              {qLoading ? '...' : `${answeredCount}/${questions.length}`}
-            </span>
           </div>
-        </div>
+        ) : interview.status === 'completed' && (
+          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
+            <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
+            <span className="text-sm text-gray-500">Not scored yet</span>
+          </div>
+        )}
 
         {/* candidate feedback */}
         {interview.feedback_rating != null && (
@@ -177,9 +169,14 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
 
         {/* questions and answers */}
         <div>
-          <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-3">
-            QUESTIONS & ANSWERS
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-semibold text-gray-500 tracking-widest">
+              QUESTIONS & ANSWERS
+            </p>
+            <span className="text-[11px] font-semibold text-gray-400">
+              {qLoading ? '...' : `${answeredCount}/${questions.length} answered`}
+            </span>
+          </div>
 
           {qLoading ? (
             <div className="flex flex-col gap-3">
