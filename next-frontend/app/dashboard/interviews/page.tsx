@@ -271,28 +271,36 @@ function InterviewsContent() {
     const isSelected = detailInterview?.id === iv.id
     const hasScore = iv.status === 'completed' && iv.final_score > 0
 
+    // short date like "4 Mar"
+    const shortDate = new Date(iv.scheduled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+
     return (
       <div
         key={iv.id}
         onClick={() => setDetailInterview(iv)}
-        className={`flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+        className={`grid grid-cols-[1fr_52px_44px] items-center px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
           isSelected
             ? 'bg-white/[0.04] border-l-[#4ade80]'
             : 'hover:bg-white/[0.02] border-l-transparent'
         }`}
       >
-        <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
-          {initials}
+        {/* name + status */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-white leading-tight truncate">{fullName}</p>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${st.text} mt-0.5`}>
+              <span className={`w-1 h-1 rounded-full ${st.dot}`} />
+              {st.label}
+            </span>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-white leading-tight truncate">{fullName}</p>
-          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${st.text} mt-0.5`}>
-            <span className={`w-1 h-1 rounded-full ${st.dot}`} />
-            {st.label}
-          </span>
-        </div>
-        {/* show score ring or feedback star on the right */}
-        <div className="shrink-0">
+        {/* date */}
+        <span className="text-[10px] text-gray-500">{shortDate}</span>
+        {/* score */}
+        <div className="flex justify-end">
           {hasScore ? (
             <ScoreRing score={iv.final_score} size="sm" />
           ) : iv.feedback_rating != null ? (
@@ -445,25 +453,23 @@ function InterviewsContent() {
 
             {/* compact interview list */}
             <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex-1 overflow-hidden flex flex-col min-h-0">
-              {/* sort header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 shrink-0">
+              {/* column headers with sort buttons */}
+              <div className="grid grid-cols-[1fr_52px_44px] items-center px-3 py-2 border-b border-white/5 shrink-0">
                 <span className="text-[10px] font-semibold text-gray-500 tracking-widest">
                   {filtered.length} INTERVIEW{filtered.length !== 1 ? 'S' : ''}
                 </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    Date <ArrowUpDown className="w-2.5 h-2.5" />
-                  </button>
-                  <button
-                    onClick={() => setSortByScore((v) => v === 'none' ? 'desc' : v === 'desc' ? 'asc' : 'none')}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    Score <ArrowUpDown className="w-2.5 h-2.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
+                  className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
+                >
+                  DATE <ArrowUpDown className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  onClick={() => setSortByScore((v) => v === 'none' ? 'desc' : v === 'desc' ? 'asc' : 'none')}
+                  className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors justify-end"
+                >
+                  SCORE <ArrowUpDown className="w-2.5 h-2.5" />
+                </button>
               </div>
 
               {/* scrollable compact rows */}
