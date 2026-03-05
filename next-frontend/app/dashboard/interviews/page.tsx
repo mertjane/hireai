@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ChevronDown, Copy, Check, XCircle, ExternalLink, Search, Star, ArrowUpDown, Download } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, Check, XCircle, ExternalLink, Search, Star, Download } from 'lucide-react'
 import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
 import { useInterviews } from '@/hooks/use-interviews'
@@ -64,6 +64,17 @@ function StatCard({ value, label, color }: { value: string | number; label: stri
   )
 }
 
+// up/down arrows — active direction highlighted in green
+function SortIcon({ dir, size = 'sm' }: { dir: 'asc' | 'desc' | 'none'; size?: 'sm' | 'md' }) {
+  const cls = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3'
+  return (
+    <span className="inline-flex flex-col -space-y-1.5">
+      <ChevronUp className={`${cls} ${dir === 'asc' ? 'text-[#4ade80]' : 'text-gray-600'}`} />
+      <ChevronDown className={`${cls} ${dir === 'desc' ? 'text-[#4ade80]' : 'text-gray-600'}`} />
+    </span>
+  )
+}
+
 function InterviewsContent() {
   const { company } = useAuth()
   const { jobs } = useJobs(company?.id ?? null)
@@ -79,6 +90,9 @@ function InterviewsContent() {
   const [detailInterview, setDetailInterview] = useState<Interview | null>(null)
   const [sortNewest, setSortNewest] = useState(true)
   const [sortByScore, setSortByScore] = useState<'none' | 'desc' | 'asc'>('none')
+
+  // derive date sort direction for the icon indicator
+  const dateSortDir: 'asc' | 'desc' | 'none' = sortByScore !== 'none' ? 'none' : (sortNewest ? 'desc' : 'asc')
 
   // auto-select an interview when navigating with ?selected=id (e.g. after editing)
   const searchParams = useSearchParams()
@@ -462,13 +476,13 @@ function InterviewsContent() {
                   onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
                   className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
                 >
-                  DATE <ArrowUpDown className="w-2.5 h-2.5" />
+                  DATE <SortIcon dir={dateSortDir} size="sm" />
                 </button>
                 <button
                   onClick={() => setSortByScore((v) => v === 'none' ? 'desc' : v === 'desc' ? 'asc' : 'none')}
                   className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors justify-end"
                 >
-                  SCORE <ArrowUpDown className="w-2.5 h-2.5" />
+                  SCORE <SortIcon dir={sortByScore} size="sm" />
                 </button>
               </div>
 
@@ -521,7 +535,7 @@ function InterviewsContent() {
                     className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
                   >
                     {h}
-                    <ArrowUpDown className="w-3 h-3" />
+                    <SortIcon dir={dateSortDir} size="md" />
                   </button>
                 ) : h === 'SCORE' ? (
                   <button
@@ -530,7 +544,7 @@ function InterviewsContent() {
                     className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
                   >
                     {h}
-                    <ArrowUpDown className="w-3 h-3" />
+                    <SortIcon dir={sortByScore} size="md" />
                   </button>
                 ) : (
                   <span key={h || '_actions'} className="text-[10px] font-semibold text-gray-500 tracking-widest">{h}</span>
