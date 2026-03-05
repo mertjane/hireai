@@ -55,12 +55,17 @@ function ScoreRing({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }
   )
 }
 
-function StatCard({ value, label, color }: { value: string | number; label: string; color?: string }) {
+function StatCard({ value, label, color, active, onClick }: { value: string | number; label: string; color?: string; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-[#0D1117] border border-white/5 rounded-2xl px-4 py-3 flex-1 min-w-0">
+    <button
+      onClick={onClick}
+      className={`bg-[#0D1117] border rounded-2xl px-4 py-3 flex-1 min-w-0 text-left transition-colors ${
+        active ? 'border-[#4ade80]/40 bg-[#4ade80]/5' : 'border-white/5 hover:border-white/10'
+      }`}
+    >
       <div className={`text-xl font-bold ${color ?? 'text-white'}`}>{value}</div>
       <div className="text-xs text-gray-500 mt-0.5">{label}</div>
-    </div>
+    </button>
   )
 }
 
@@ -292,7 +297,7 @@ function InterviewsContent() {
       <div
         key={iv.id}
         onClick={() => setDetailInterview(iv)}
-        className={`grid grid-cols-[1fr_52px_44px] items-center px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+        className={`grid grid-cols-[1fr_52px_44px] gap-x-2 items-center px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
           isSelected
             ? 'bg-white/[0.04] border-l-[#4ade80]'
             : 'hover:bg-white/[0.02] border-l-transparent'
@@ -450,11 +455,11 @@ function InterviewsContent() {
 
       {/* stat cards — always full width */}
       <div className="flex gap-3">
-        <StatCard value={stats.total} label="Total" />
-        <StatCard value={stats.scheduled} label="Scheduled" color="text-blue-400" />
-        <StatCard value={stats.completed} label="Completed" color="text-[#4ade80]" />
+        <StatCard value={stats.total} label="Total" onClick={() => setStatusTab('all')} active={statusTab === 'all'} />
+        <StatCard value={stats.scheduled} label="Scheduled" color="text-blue-400" onClick={() => setStatusTab('scheduled')} active={statusTab === 'scheduled'} />
+        <StatCard value={stats.completed} label="Completed" color="text-[#4ade80]" onClick={() => setStatusTab('completed')} active={statusTab === 'completed'} />
         <StatCard value={`${stats.avgScore}%`} label="Avg. Score" color="text-[#4ade80]" />
-        <StatCard value={stats.noShow} label="No Show" color="text-red-400" />
+        <StatCard value={stats.noShow} label="No Show" color="text-red-400" onClick={() => setStatusTab('no_show')} active={statusTab === 'no_show'} />
       </div>
 
       {isSplit ? (
@@ -468,7 +473,7 @@ function InterviewsContent() {
             {/* compact interview list */}
             <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex-1 overflow-hidden flex flex-col min-h-0">
               {/* column headers with sort buttons */}
-              <div className="grid grid-cols-[1fr_52px_44px] items-center px-3 py-2 border-b border-white/5 shrink-0">
+              <div className="grid grid-cols-[1fr_52px_44px] gap-x-2 items-center px-3 py-2 border-b border-white/5 shrink-0">
                 <span className="text-[10px] font-semibold text-gray-500 tracking-widest">
                   {filtered.length} INTERVIEW{filtered.length !== 1 ? 'S' : ''}
                 </span>
