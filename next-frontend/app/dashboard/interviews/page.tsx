@@ -196,7 +196,7 @@ function InterviewsContent() {
 
   // export filtered interviews as a CSV file
   const handleExportCSV = useCallback(() => {
-    const header = 'Candidate,Email,Position,Scheduled,Score,Status'
+    const header = 'Candidate,Email,Position,Scheduled,Duration (min),Score,Status'
     const rows = filtered.map((iv) => {
       const c = candidateMap[iv.candidate_id]
       const j = jobMap[iv.job_id]
@@ -205,7 +205,7 @@ function InterviewsContent() {
       const position = j?.title ?? ''
       const date = new Date(iv.scheduled_at).toLocaleDateString()
       const score = iv.final_score > 0 ? iv.final_score : iv.status === 'completed' ? 'Not scored' : ''
-      return `"${name}","${email}","${position}","${date}","${score}","${iv.status}"`
+      return `"${name}","${email}","${position}","${date}",${iv.duration_minutes},"${score}","${iv.status}"`
     })
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -346,7 +346,7 @@ function InterviewsContent() {
       <div
         key={iv.id}
         onClick={() => setDetailInterview(iv)}
-        className="group grid grid-cols-[2fr_1.5fr_1fr_1fr_0.7fr_72px] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
+        className="group grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
       >
         {/* candidate */}
         <div className="flex items-center gap-3 min-w-0">
@@ -364,6 +364,9 @@ function InterviewsContent() {
 
         {/* scheduled date */}
         <span className="text-sm text-gray-400">{formatDate(iv.scheduled_at)}</span>
+
+        {/* duration */}
+        <span className="text-sm text-gray-400">{iv.duration_minutes}m</span>
 
         {/* score — show ring for scored, label for unscored completed, dash otherwise */}
         <div className="flex items-center gap-2">
@@ -528,8 +531,8 @@ function InterviewsContent() {
           {/* full table */}
           <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
             {/* table header */}
-            <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_0.7fr_72px] px-5 py-3 border-b border-white/5">
-              {['CANDIDATE', 'POSITION', 'SCHEDULED', 'SCORE', 'STATUS', ''].map((h) => (
+            <div className="grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] px-5 py-3 border-b border-white/5">
+              {['CANDIDATE', 'POSITION', 'SCHEDULED', 'DURATION', 'SCORE', 'STATUS', ''].map((h) => (
                 h === 'SCHEDULED' ? (
                   <button
                     key={h}
@@ -557,7 +560,7 @@ function InterviewsContent() {
             {isLoading ? (
               <div className="flex flex-col">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_0.7fr_72px] px-5 py-4 border-b border-white/5 gap-4">
+                  <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] px-5 py-4 border-b border-white/5 gap-4">
                     {Array.from({ length: 7 }).map((__, j) => (
                       <div key={j} className="h-4 bg-white/5 rounded animate-pulse" />
                     ))}

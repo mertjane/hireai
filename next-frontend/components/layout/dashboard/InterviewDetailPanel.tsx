@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { X, Calendar, Star, MessageSquare, Copy, Check, ExternalLink, Pencil } from 'lucide-react'
+import { X, Calendar, Clock, Star, MessageSquare, Copy, Check, ExternalLink, Pencil } from 'lucide-react'
 import { avatarColor } from '@/lib/colors'
 import { formatDate } from '@/lib/date'
 import { useInterviewQuestions } from '@/hooks/use-interview-questions'
@@ -115,6 +115,11 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             <Calendar className="w-3 h-3" />
             {formatDate(interview.scheduled_at)}
           </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <Clock className="w-3 h-3" />
+            {interview.duration_minutes}m
+          </div>
+
           {/* link actions pushed to the right end */}
           {interview.status === 'scheduled' && interviewUrl && (
             <div className="flex items-center gap-1.5 ml-auto">
