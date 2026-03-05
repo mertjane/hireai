@@ -56,9 +56,9 @@ function ScoreRing({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }
 
 function StatCard({ value, label, color }: { value: string | number; label: string; color?: string }) {
   return (
-    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-5 flex-1 min-w-0">
-      <div className={`text-2xl font-bold ${color ?? 'text-white'}`}>{value}</div>
-      <div className="text-xs text-gray-500 mt-1">{label}</div>
+    <div className="bg-[#0D1117] border border-white/5 rounded-2xl px-4 py-3 flex-1 min-w-0">
+      <div className={`text-xl font-bold ${color ?? 'text-white'}`}>{value}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
     </div>
   )
 }
@@ -309,7 +309,7 @@ export default function InterviewsPage() {
       <div
         key={iv.id}
         onClick={() => setDetailInterview(iv)}
-        className="group grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
+        className="group grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
       >
         {/* candidate */}
         <div className="flex items-center gap-3 min-w-0">
@@ -345,67 +345,65 @@ export default function InterviewsPage() {
           )}
         </div>
 
-        {/* status + actions */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${st.text}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-              {st.label}
+        {/* status — fixed column */}
+        <div className="flex items-center gap-1.5">
+          <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${st.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+            {st.label}
+          </span>
+          {/* show a star if candidate left feedback */}
+          {iv.feedback_rating != null && (
+            <span title={`Feedback: ${iv.feedback_rating}/5`}>
+              <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
             </span>
-            {/* show a star if candidate left feedback */}
-            {iv.feedback_rating != null && (
-              <span title={`Feedback: ${iv.feedback_rating}/5`}>
-                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-              </span>
-            )}
-          </div>
+          )}
+        </div>
 
-          {/* action icons — only visible on hover */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {iv.status === 'scheduled' && !iv.token_revoke && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleCopy(iv.id, iv.token) }}
-                className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
-                title="Copy interview link"
-              >
-                {copiedId === iv.id ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            )}
-            {iv.status === 'scheduled' && !iv.token_revoke && (
-              <a
-                href={getInterviewUrl(iv.token)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
-                title="Open interview link"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-            {iv.status === 'scheduled' && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setConfirmCancelId(iv.id) }}
-                disabled={cancellingId === iv.id}
-                className="p-1 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors disabled:opacity-40"
-                title="Cancel interview"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {/* actions — separate fixed column, visible on hover */}
+        <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+          {iv.status === 'scheduled' && !iv.token_revoke && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleCopy(iv.id, iv.token) }}
+              className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+              title="Copy interview link"
+            >
+              {copiedId === iv.id ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          {iv.status === 'scheduled' && !iv.token_revoke && (
+            <a
+              href={getInterviewUrl(iv.token)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+              title="Open interview link"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {iv.status === 'scheduled' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirmCancelId(iv.id) }}
+              disabled={cancellingId === iv.id}
+              className="p-1 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors disabled:opacity-40"
+              title="Cancel interview"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* header — always full width */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Interviews</h2>
-          <p className="text-gray-500 text-sm mt-1">Track and manage all interviews</p>
+          <h2 className="text-lg font-bold">Interviews</h2>
+          <p className="text-gray-500 text-xs mt-0.5">Track and manage all interviews</p>
         </div>
         {filtered.length > 0 && (
           <button
@@ -419,7 +417,7 @@ export default function InterviewsPage() {
       </div>
 
       {/* stat cards — always full width */}
-      <div className="flex gap-4">
+      <div className="flex gap-3">
         <StatCard value={stats.total} label="Total" />
         <StatCard value={stats.scheduled} label="Scheduled" color="text-blue-400" />
         <StatCard value={stats.completed} label="Completed" color="text-[#4ade80]" />
@@ -498,8 +496,8 @@ export default function InterviewsPage() {
           {/* full table */}
           <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
             {/* table header */}
-            <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] px-5 py-3 border-b border-white/5">
-              {['CANDIDATE', 'POSITION', 'SCHEDULED', 'DURATION', 'SCORE', 'STATUS'].map((h) => (
+            <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] px-5 py-3 border-b border-white/5">
+              {['CANDIDATE', 'POSITION', 'SCHEDULED', 'DURATION', 'SCORE', 'STATUS', ''].map((h) => (
                 h === 'SCHEDULED' ? (
                   <button
                     key={h}
@@ -519,7 +517,7 @@ export default function InterviewsPage() {
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 ) : (
-                  <span key={h} className="text-[10px] font-semibold text-gray-500 tracking-widest">{h}</span>
+                  <span key={h || '_actions'} className="text-[10px] font-semibold text-gray-500 tracking-widest">{h}</span>
                 )
               ))}
             </div>
@@ -527,8 +525,8 @@ export default function InterviewsPage() {
             {isLoading ? (
               <div className="flex flex-col">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.8fr] px-5 py-4 border-b border-white/5 gap-4">
-                    {Array.from({ length: 6 }).map((__, j) => (
+                  <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] px-5 py-4 border-b border-white/5 gap-4">
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <div key={j} className="h-4 bg-white/5 rounded animate-pulse" />
                     ))}
                   </div>

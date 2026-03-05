@@ -87,8 +87,8 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
       {/* scrollable body */}
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
 
-        {/* interview meta chips */}
-        <div className="flex flex-wrap gap-3">
+        {/* interview meta chips + link actions in one row */}
+        <div className="flex items-center gap-3 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${st.text}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
             {st.label}
@@ -106,29 +106,29 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             <Clock className="w-3 h-3" />
             {interview.duration_minutes}m
           </div>
-        </div>
 
-        {/* interview link actions for scheduled interviews */}
-        {interview.status === 'scheduled' && interviewUrl && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopyLink}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:bg-white/10 transition-colors"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied' : 'Copy Link'}
-            </button>
-            <a
-              href={interviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:bg-white/10 transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Open
-            </a>
-          </div>
-        )}
+          {/* link actions pushed to the right end */}
+          {interview.status === 'scheduled' && interviewUrl && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[11px] text-gray-300 hover:bg-white/10 transition-colors"
+              >
+                {copied ? <Check className="w-3 h-3 text-[#4ade80]" /> : <Copy className="w-3 h-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <a
+                href={interviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[11px] text-gray-300 hover:bg-white/10 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open
+              </a>
+            </div>
+          )}
+        </div>
 
         {/* score + answer count row */}
         <div className="flex gap-3">
