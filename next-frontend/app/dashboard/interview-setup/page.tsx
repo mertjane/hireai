@@ -159,7 +159,6 @@ function InterviewSetupContent() {
       const d = new Date(iv.scheduled_at)
       setSelectedDate(d)
       setSelectedTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
-      setSettings((s) => ({ ...s, duration_minutes: iv.duration_minutes }))
     }).catch((err) => console.error('[edit] failed to load interview', err))
   }, [editId])
 
@@ -342,7 +341,7 @@ function InterviewSetupContent() {
               const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m)
               return d.toISOString()
             })(),
-            duration_minutes: settings.duration_minutes,
+            duration_minutes: estimatedMinutes,
             job_title: jobs.find((j) => j.id === candidate.job_id)?.title,
             company_name: company?.name,
           })
@@ -388,7 +387,7 @@ function InterviewSetupContent() {
       const base = selectedDate ?? new Date()
       const [h, m] = selectedTime.split(':').map(Number)
       const scheduled_at = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m).toISOString()
-      await apiInstance.put(`/interviews/${editId}`, { scheduled_at, duration_minutes: settings.duration_minutes })
+      await apiInstance.put(`/interviews/${editId}`, { scheduled_at, duration_minutes: estimatedMinutes })
 
       const originals = originalIQsRef.current
       // remove questions that were deleted from the selection
@@ -424,6 +423,13 @@ function InterviewSetupContent() {
       setSaving(false)
     }
   }
+
+  // estimated interview duration: sum of timers + ~10s transition per question gap
+  const estimatedMinutes = useMemo(() => {
+    if (selected.length === 0) return 0
+    const totalSec = selected.reduce((s, q) => s + q.timer, 0) + (selected.length - 1) * 10
+    return Math.ceil(totalSec / 60)
+  }, [selected])
 
   // check if the selected date+time is in the past
   const isDatePast = useMemo(() => {
@@ -689,10 +695,10 @@ function InterviewSetupContent() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">Interview Questions</h3>
               <div className="flex items-center gap-3">
-                {/* estimated total answer time from all selected questions */}
+                {/* estimated duration including ~10s transition between questions */}
                 {selected.length > 0 && (
                   <span className="text-[10px] text-gray-600">
-                    ~{Math.ceil(selected.reduce((s, q) => s + q.timer, 0) / 60)}min
+                    ~{estimatedMinutes}min
                   </span>
                 )}
                 <span className="text-xs text-gray-500">
@@ -756,20 +762,12 @@ function InterviewSetupContent() {
                 />
               </div>
 
-              {/* Duration select */}
-              <div className="relative shrink-0">
-                <select
-                  value={settings.duration_minutes}
-                  onChange={(e) => setSettings((s) => ({ ...s, duration_minutes: Number(e.target.value) }))}
-                  className="appearance-none bg-[#0A0D12] border border-white/10 rounded-xl px-3 pr-7 py-1.5 text-xs text-gray-300 outline-none focus:border-white/20 cursor-pointer"
-                >
-                  <option value={15}>15 min</option>
-                  <option value={30}>30 min</option>
-                  <option value={45}>45 min</option>
-                  <option value={60}>60 min</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500 pointer-events-none" />
-              </div>
+              {/* auto-calculated duration shown as a label */}
+              {selected.length > 0 && (
+                <span className="bg-[#0A0D12] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-400 shrink-0">
+                  ~{estimatedMinutes} min
+                </span>
+              )}
             </div>
           </div>
 
