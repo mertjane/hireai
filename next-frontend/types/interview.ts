@@ -13,4 +13,20 @@ export interface Interview {
   final_score: number
   status: InterviewStatus
   created_at: string
+  feedback_rating: number | null
+  feedback_comment: string | null
+}
+
+// a question assigned to an interview, with the candidate's answer
+export interface InterviewQuestion {
+  id: string
+  interview_id: string
+  question_id: string
+  q_timer: number
+  q_answer: string | null
+  questions: {
+    id: string
+    question: string
+    category: string
+  }
 }

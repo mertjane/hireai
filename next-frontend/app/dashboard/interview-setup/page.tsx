@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search } from 'lucide-react'
+import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -82,7 +82,7 @@ export default function InterviewSetupPage() {
   const { jobs } = useJobs(company?.id ?? null)
   const [selectedJob, setSelectedJob] = useState<string>(ALL)
   const { questions, isLoading: qLoading, error: qError, mutate: mutateQuestions } = useQuestions()
-  const { candidates } = useCandidates(selectedJob === ALL ? undefined : selectedJob)
+  const { candidates, mutate: mutateCandidates } = useCandidates(selectedJob === ALL ? undefined : selectedJob)
 
   const [checkedCandidates, setCheckedCandidates] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<SelectedQuestion[]>([])
@@ -106,11 +106,14 @@ export default function InterviewSetupPage() {
     expireAfter7Days: true,
   })
   const [sending, setSending] = useState(false)
-  const [sendResult, setSendResult] = useState<{ success: number; failed: number } | null>(null)
+  const [sendResult, setSendResult] = useState<{ success: number; failed: number; failedNames: string[] } | null>(null)
 
   // holds the interview links created after sending
   const [createdLinks, setCreatedLinks] = useState<{ name: string; url: string }[]>([])
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+
+  // candidate search
+  const [candidateSearch, setCandidateSearch] = useState('')
 
   // question bank search and creation
   const [qSearch, setQSearch] = useState('')
@@ -164,7 +167,31 @@ export default function InterviewSetupPage() {
     }
   }
 
-  const eligibleCandidates = candidates.filter((c) => c.status !== 'in_progress')
+  // delete a question from the bank
+  const handleDeleteQuestion = async (id: string) => {
+    try {
+      await apiInstance.delete(`/questions/${id}`)
+      // also remove from selected list if it was added
+      setSelected((prev) => prev.filter((s) => s.question.id !== id))
+      mutateQuestions()
+    } catch (err) {
+      console.error('[questions] delete failed', err)
+    }
+  }
+
+  // filter candidates by search term and exclude in-progress
+  const filteredCandidates = useMemo(() => {
+    const term = candidateSearch.toLowerCase()
+    return candidates.filter((c) => {
+      if (term) {
+        const name = `${c.first_name} ${c.last_name}`.toLowerCase()
+        if (!name.includes(term) && !c.email.toLowerCase().includes(term)) return false
+      }
+      return true
+    })
+  }, [candidates, candidateSearch])
+
+  const eligibleCandidates = filteredCandidates.filter((c) => c.status !== 'in_progress')
   const visibleChecked = eligibleCandidates.filter((c) => checkedCandidates.has(c.id)).length
   const allChecked = eligibleCandidates.length > 0 && visibleChecked === eligibleCandidates.length
   const someChecked = visibleChecked > 0 && !allChecked
@@ -189,6 +216,15 @@ export default function InterviewSetupPage() {
   const addQuestion = (q: Question) => {
     if (selected.some((s) => s.question.id === q.id)) return
     setSelected((prev) => [...prev, { question: q, timer: settings.defaultTimer }])
+  }
+
+  // add all questions from a category at once
+  const addCategoryQuestions = (qs: Question[]) => {
+    setSelected((prev) => {
+      const existingIds = new Set(prev.map((s) => s.question.id))
+      const toAdd = qs.filter((q) => !existingIds.has(q.id))
+      return [...prev, ...toAdd.map((q) => ({ question: q, timer: settings.defaultTimer }))]
+    })
   }
 
   const removeQuestion = (id: string) =>
@@ -242,6 +278,7 @@ export default function InterviewSetupPage() {
 
     let success = 0
     let failed = 0
+    const failedNames: string[] = []
     const links: { name: string; url: string }[] = []
 
     for (const candidate of targetCandidates) {
@@ -278,20 +315,31 @@ export default function InterviewSetupPage() {
         success++
       } catch (err) {
         console.error('[send] failed for candidate', candidate.id, err)
+        failedNames.push(`${candidate.first_name} ${candidate.last_name}`)
         failed++
       }
     }
 
     setSending(false)
-    setSendResult({ success, failed })
+    setSendResult({ success, failed, failedNames })
     setCreatedLinks(links)
     if (success > 0) {
       setCheckedCandidates(new Set())
       setSelected([])
+      // refresh candidate list so statuses update
+      mutateCandidates()
     }
   }
 
-  const canSend = visibleChecked > 0 && selected.length > 0
+  // check if the selected date+time is in the past
+  const isDatePast = useMemo(() => {
+    if (!selectedDate) return false
+    const [h, m] = selectedTime.split(':').map(Number)
+    const dt = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), h, m)
+    return dt.getTime() < Date.now()
+  }, [selectedDate, selectedTime])
+
+  const canSend = visibleChecked > 0 && selected.length > 0 && !isDatePast
 
   return (
     <div className="flex flex-col gap-5">
@@ -338,7 +386,7 @@ export default function InterviewSetupPage() {
             <Check className="w-4 h-4 shrink-0" />
             <span>
               {sendResult.success > 0 && `Interview links created for ${sendResult.success} candidate(s). `}
-              {sendResult.failed > 0 && `${sendResult.failed} failed.`}
+              {sendResult.failed > 0 && `Failed for: ${sendResult.failedNames.join(', ')}`}
             </span>
             <button onClick={() => { setSendResult(null); setCreatedLinks([]) }} className="ml-auto opacity-60 hover:opacity-100 transition-opacity">
               <X className="w-4 h-4" />
@@ -375,39 +423,68 @@ export default function InterviewSetupPage() {
         </div>
       )}
 
+      {/* warning when selected date is in the past */}
+      {isDatePast && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <Clock className="w-4 h-4 shrink-0" />
+          The selected date and time is in the past. Choose a future time to send interview links.
+        </div>
+      )}
+
       {/* 3-column layout */}
       <div className="flex gap-4 items-start">
 
         {/* Column 1 — Candidates */}
         <div className="w-72 shrink-0 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/5 shrink-0">
-            <span className="text-sm font-semibold">Candidates</span>
-            <div className="flex items-center gap-2">
-              {visibleChecked > 0 && (
-                <span className="text-xs text-[#4ade80] font-medium">{visibleChecked}</span>
-              )}
-              <button
-                onClick={toggleAll}
-                className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                  allChecked
-                    ? 'bg-[#4ade80] border-[#4ade80]'
-                    : someChecked
-                    ? 'bg-[#4ade80]/30 border-[#4ade80]/40'
-                    : 'border-white/20 bg-transparent'
-                }`}
-              >
-                {(allChecked || someChecked) && <Check className="w-3 h-3 text-[#0A0D12]" />}
-              </button>
+          <div className="px-4 py-3.5 border-b border-white/5 shrink-0">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-sm font-semibold">
+                Candidates
+                {/* total / eligible count */}
+                <span className="text-[10px] text-gray-500 font-normal ml-1.5">
+                  {eligibleCandidates.length}/{candidates.length}
+                </span>
+              </span>
+              <div className="flex items-center gap-2">
+                {visibleChecked > 0 && (
+                  <span className="text-xs text-[#4ade80] font-medium">{visibleChecked}</span>
+                )}
+                <button
+                  onClick={toggleAll}
+                  className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                    allChecked
+                      ? 'bg-[#4ade80] border-[#4ade80]'
+                      : someChecked
+                      ? 'bg-[#4ade80]/30 border-[#4ade80]/40'
+                      : 'border-white/20 bg-transparent'
+                  }`}
+                >
+                  {(allChecked || someChecked) && <Check className="w-3 h-3 text-[#0A0D12]" />}
+                </button>
+              </div>
+            </div>
+            {/* search candidates by name or email */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search candidates..."
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                className="w-full bg-[#0A0D12] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors"
+              />
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[calc(100vh-300px)] min-h-[320px] py-1">
-            {candidates.length === 0 ? (
+          <div className="overflow-y-auto max-h-[calc(100vh-340px)] min-h-[320px] py-1">
+            {filteredCandidates.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-gray-600 text-xs text-center px-4">
-                {selectedJob === ALL ? 'Select a job to see candidates' : 'No candidates found'}
+                {candidates.length === 0
+                  ? (selectedJob === ALL ? 'Select a job to see candidates' : 'No candidates found')
+                  : 'No matching candidates'}
               </div>
             ) : (
-              candidates.map((c) => {
+              filteredCandidates.map((c) => {
                 const isActive = c.status === 'in_progress'
                 const checked = !isActive && checkedCandidates.has(c.id)
                 const initials = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase()
@@ -464,9 +541,26 @@ export default function InterviewSetupPage() {
           <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">Interview Questions</h3>
-              <span className="text-xs text-gray-500">
-                {selected.length} question{selected.length !== 1 ? 's' : ''}
-              </span>
+              <div className="flex items-center gap-3">
+                {/* estimated total answer time from all selected questions */}
+                {selected.length > 0 && (
+                  <span className="text-[10px] text-gray-600">
+                    ~{Math.ceil(selected.reduce((s, q) => s + q.timer, 0) / 60)}min
+                  </span>
+                )}
+                <span className="text-xs text-gray-500">
+                  {selected.length} question{selected.length !== 1 ? 's' : ''}
+                </span>
+                {/* remove all selected questions at once */}
+                {selected.length > 0 && (
+                  <button
+                    onClick={() => setSelected([])}
+                    className="text-[10px] text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {/* Date picker */}
@@ -682,16 +776,34 @@ export default function InterviewSetupPage() {
               ) : qError ? (
                 <p className="text-xs text-red-400">{qError}</p>
               ) : Object.keys(grouped).length === 0 ? (
-                <p className="text-xs text-gray-400">No questions found.</p>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <p className="text-xs text-gray-400 mb-1">
+                    {questions.length === 0 ? 'No questions yet' : 'No matching questions'}
+                  </p>
+                  {questions.length === 0 && (
+                    <p className="text-[10px] text-gray-600">
+                      Click the <span className="text-gray-400">+</span> button above to create your first question
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="flex flex-col gap-5">
                   {Object.entries(grouped).map(([cat, qs]) => {
                     const cs = catStyle(cat)
                     return (
                       <div key={cat}>
-                        <p className={`text-[10px] font-bold tracking-widest mb-2 ${cs.text}`}>
-                          {cat.toUpperCase()}
-                        </p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className={`text-[10px] font-bold tracking-widest ${cs.text}`}>
+                            {cat.toUpperCase()}
+                          </p>
+                          {/* add all questions from this category at once */}
+                          <button
+                            onClick={() => addCategoryQuestions(qs)}
+                            className="text-[9px] text-gray-500 hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-white/5"
+                          >
+                            Add all
+                          </button>
+                        </div>
                         <div className="flex flex-col gap-1">
                           {qs.map((q) => {
                             const isAdded = selected.some((s) => s.question.id === q.id)
@@ -699,16 +811,25 @@ export default function InterviewSetupPage() {
                               <div
                                 key={q.id}
                                 onClick={() => addQuestion(q)}
-                                className={`flex items-start justify-between gap-2 px-2 py-2 rounded-lg transition-colors ${isAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}
+                                className={`flex items-start justify-between gap-2 px-2 py-2 rounded-lg transition-colors group/q ${isAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}
                               >
                                 <p className="text-xs text-gray-300 leading-snug">{q.question}</p>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); addQuestion(q) }}
-                                  disabled={isAdded}
-                                  className="w-5 h-5 rounded-full bg-white/10 hover:bg-[#4ade80] hover:text-[#0A0D12] text-gray-400 flex items-center justify-center shrink-0 transition-colors disabled:cursor-not-allowed"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  {/* delete question from bank */}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id) }}
+                                    className="w-5 h-5 rounded-full text-gray-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors opacity-0 group-hover/q:opacity-100"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); addQuestion(q) }}
+                                    disabled={isAdded}
+                                    className="w-5 h-5 rounded-full bg-white/10 hover:bg-[#4ade80] hover:text-[#0A0D12] text-gray-400 flex items-center justify-center transition-colors disabled:cursor-not-allowed"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </div>
                             )
                           })}
