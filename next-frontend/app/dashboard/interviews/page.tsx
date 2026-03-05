@@ -448,7 +448,7 @@ function InterviewsContent() {
         <div className="flex gap-4 items-start" style={{ height: 'calc(100vh - 280px)' }}>
 
           {/* left column — filters + compact interview list */}
-          <div className="w-[38%] shrink-0 flex flex-col gap-3 h-full min-h-0">
+          <div className="w-[33%] shrink-0 flex flex-col gap-3 h-full min-h-0">
             {filtersUI}
 
             {/* compact interview list */}
