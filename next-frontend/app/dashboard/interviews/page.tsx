@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChevronDown, Copy, Check, XCircle, ExternalLink, Search, Star, ArrowUpDown, Download } from 'lucide-react'
 import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
@@ -63,7 +64,7 @@ function StatCard({ value, label, color }: { value: string | number; label: stri
   )
 }
 
-export default function InterviewsPage() {
+function InterviewsContent() {
   const { company } = useAuth()
   const { jobs } = useJobs(company?.id ?? null)
   const { interviews, isLoading, mutate } = useInterviews()
@@ -78,6 +79,15 @@ export default function InterviewsPage() {
   const [detailInterview, setDetailInterview] = useState<Interview | null>(null)
   const [sortNewest, setSortNewest] = useState(true)
   const [sortByScore, setSortByScore] = useState<'none' | 'desc' | 'asc'>('none')
+
+  // auto-select an interview when navigating with ?selected=id (e.g. after editing)
+  const searchParams = useSearchParams()
+  const selectedId = searchParams.get('selected')
+  useEffect(() => {
+    if (!selectedId || isLoading || interviews.length === 0) return
+    const match = interviews.find((iv) => iv.id === selectedId)
+    if (match) setDetailInterview(match)
+  }, [selectedId, isLoading, interviews])
 
   // lookup maps for candidate and job names
   const candidateMap = useMemo(() => {
@@ -575,5 +585,14 @@ export default function InterviewsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// wrap in Suspense so useSearchParams works correctly
+export default function InterviewsPage() {
+  return (
+    <Suspense>
+      <InterviewsContent />
+    </Suspense>
   )
 }

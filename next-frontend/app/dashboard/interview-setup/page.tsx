@@ -416,7 +416,8 @@ function InterviewSetupContent() {
           }
         }
       }
-      router.push('/dashboard/interviews')
+      // navigate back with the interview pre-selected so the detail panel opens
+      router.push(`/dashboard/interviews?selected=${editId}`)
     } catch (err) {
       console.error('[edit] save failed', err)
     } finally {
