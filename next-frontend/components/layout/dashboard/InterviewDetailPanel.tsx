@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Calendar, Clock, Star, MessageSquare, Copy, Check, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
+import { X, Calendar, Clock, Star, MessageSquare, Copy, Check, ExternalLink, Pencil } from 'lucide-react'
 import { avatarColor } from '@/lib/colors'
 import { formatDate } from '@/lib/date'
 import { useInterviewQuestions } from '@/hooks/use-interview-questions'
@@ -76,12 +77,24 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             <p className="text-[11px] text-gray-500 truncate">{candidate?.email}</p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors shrink-0"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* edit button — only for scheduled interviews */}
+          {interview.status === 'scheduled' && (
+            <Link
+              href={`/dashboard/interview-setup?edit=${interview.id}`}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+              title="Edit interview"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* scrollable body */}

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Calendar } from '@/components/ui/calendar'
@@ -11,13 +12,16 @@ import { useQuestions } from '@/hooks/use-questions'
 import { useCandidates } from '@/hooks/use-candidates'
 import { apiInstance } from '@/services/config/axios.config'
 import { avatarColor, getJobChipColor } from '@/lib/colors'
+import { useInterviewQuestions } from '@/hooks/use-interview-questions'
 import type { Question } from '@/types/question'
+import type { Interview, InterviewQuestion } from '@/types/interview'
 
 const ALL = 'all'
 
 interface SelectedQuestion {
   question: Question
   timer: number
+  iqId?: string // interview_question ID, used in edit mode to track existing questions
 }
 
 const PALETTE = [
@@ -77,7 +81,7 @@ function SendingOverlay() {
   )
 }
 
-export default function InterviewSetupPage() {
+function InterviewSetupContent() {
   const { company } = useAuth()
   const { jobs } = useJobs(company?.id ?? null)
   const [selectedJob, setSelectedJob] = useState<string>(ALL)
@@ -125,6 +129,51 @@ export default function InterviewSetupPage() {
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+
+  // -- edit mode: pre-fill interview data when ?edit=interviewId is in the URL --
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const editId = searchParams.get('edit')
+  const isEditMode = !!editId
+  const [editInterview, setEditInterview] = useState<Interview | null>(null)
+  const [saving, setSaving] = useState(false)
+  const { questions: editQuestions, isLoading: editQLoading } = useInterviewQuestions(editId)
+  const originalIQsRef = useRef<InterviewQuestion[]>([])
+  const editInitRef = useRef(false)
+
+  // find candidate and job for the interview being edited
+  const editCandidate = isEditMode && editInterview
+    ? candidates.find((c) => c.id === editInterview.candidate_id) ?? null
+    : null
+  const editJob = isEditMode && editInterview
+    ? jobs.find((j) => j.id === editInterview.job_id) ?? null
+    : null
+
+  // fetch interview data when entering edit mode
+  useEffect(() => {
+    if (!editId) return
+    apiInstance.get(`/interviews/${editId}`).then((r) => {
+      const iv = r.data as Interview
+      setEditInterview(iv)
+      // pre-fill date, time, and duration from the existing interview
+      const d = new Date(iv.scheduled_at)
+      setSelectedDate(d)
+      setSelectedTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+      setSettings((s) => ({ ...s, duration_minutes: iv.duration_minutes }))
+    }).catch((err) => console.error('[edit] failed to load interview', err))
+  }, [editId])
+
+  // pre-fill selected questions once they load
+  useEffect(() => {
+    if (!editId || editQLoading || editInitRef.current) return
+    editInitRef.current = true
+    originalIQsRef.current = editQuestions
+    setSelected(editQuestions.map((iq) => ({
+      question: iq.questions,
+      timer: iq.q_timer,
+      iqId: iq.id,
+    })))
+  }, [editId, editQLoading, editQuestions])
 
   const selectedJob_obj = useMemo(() => jobs.find((j) => j.id === selectedJob), [jobs, selectedJob])
 
@@ -331,6 +380,50 @@ export default function InterviewSetupPage() {
     }
   }
 
+  // save changes in edit mode — update interview details and diff questions
+  const handleSaveEdit = async () => {
+    if (!editId || saving) return
+    setSaving(true)
+    try {
+      const base = selectedDate ?? new Date()
+      const [h, m] = selectedTime.split(':').map(Number)
+      const scheduled_at = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m).toISOString()
+      await apiInstance.put(`/interviews/${editId}`, { scheduled_at, duration_minutes: settings.duration_minutes })
+
+      const originals = originalIQsRef.current
+      // remove questions that were deleted from the selection
+      for (const orig of originals) {
+        if (!selected.some((s) => s.iqId === orig.id)) {
+          await apiInstance.delete(`/interview-questions/${orig.id}`)
+        }
+      }
+      // add newly selected questions
+      for (const s of selected) {
+        if (!s.iqId) {
+          await apiInstance.post('/interview-questions', {
+            interview_id: editId,
+            question_id: s.question.id,
+            q_timer: s.timer,
+          })
+        }
+      }
+      // update timers for existing questions if changed
+      for (const s of selected) {
+        if (s.iqId) {
+          const orig = originals.find((o) => o.id === s.iqId)
+          if (orig && orig.q_timer !== s.timer) {
+            await apiInstance.put(`/interview-questions/${s.iqId}`, { q_timer: s.timer })
+          }
+        }
+      }
+      router.push('/dashboard/interviews')
+    } catch (err) {
+      console.error('[edit] save failed', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // check if the selected date+time is in the past
   const isDatePast = useMemo(() => {
     if (!selectedDate) return false
@@ -339,40 +432,47 @@ export default function InterviewSetupPage() {
     return dt.getTime() < Date.now()
   }, [selectedDate, selectedTime])
 
-  const canSend = visibleChecked > 0 && selected.length > 0 && !isDatePast
+  const canSend = isEditMode
+    ? selected.length > 0 && !isDatePast && !saving
+    : visibleChecked > 0 && selected.length > 0 && !isDatePast
 
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold">Interview Setup</h2>
+          <h2 className="text-xl font-bold">{isEditMode ? 'Edit Interview' : 'Interview Setup'}</h2>
           <p className="text-gray-500 text-sm mt-1">
-            {selectedJob_obj ? `${selectedJob_obj.title} — ` : ''}configure questions and send interview links
+            {isEditMode
+              ? 'Modify questions, schedule, and duration'
+              : `${selectedJob_obj ? `${selectedJob_obj.title} — ` : ''}configure questions and send interview links`
+            }
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="relative">
-            <select
-              value={selectedJob}
-              onChange={(e) => { setSelectedJob(e.target.value); setCheckedCandidates(new Set()) }}
-              className="appearance-none bg-[#0D1117] border border-white/10 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 cursor-pointer"
-            >
-              <option value={ALL}>All Jobs</option>
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id}>{j.title}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-          </div>
+          {!isEditMode && (
+            <div className="relative">
+              <select
+                value={selectedJob}
+                onChange={(e) => { setSelectedJob(e.target.value); setCheckedCandidates(new Set()) }}
+                className="appearance-none bg-[#0D1117] border border-white/10 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 cursor-pointer"
+              >
+                <option value={ALL}>All Jobs</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>{j.title}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+            </div>
+          )}
           <button
-            onClick={handleSendLinks}
+            onClick={isEditMode ? handleSaveEdit : handleSendLinks}
             disabled={!canSend}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-[#4ade80] text-[#0A0D12] font-semibold hover:bg-[#22c55e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
-            Send Interview Links
-            {visibleChecked > 0 && (
+            {isEditMode ? (saving ? 'Saving...' : 'Save Changes') : 'Send Interview Links'}
+            {!isEditMode && visibleChecked > 0 && (
               <span className="bg-[#0A0D12]/20 px-1.5 py-0.5 rounded-md text-xs font-bold">{visibleChecked}</span>
             )}
           </button>
@@ -427,14 +527,59 @@ export default function InterviewSetupPage() {
       {isDatePast && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           <Clock className="w-4 h-4 shrink-0" />
-          The selected date and time is in the past. Choose a future time to send interview links.
+          The selected date and time is in the past. Choose a future time to {isEditMode ? 'save changes' : 'send interview links'}.
         </div>
       )}
 
       {/* 3-column layout */}
       <div className="flex gap-4 items-start">
 
-        {/* Column 1 — Candidates */}
+        {/* Column 1 — Candidates (or candidate info in edit mode) */}
+        {isEditMode ? (
+          <div className="w-72 shrink-0 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
+            <div className="px-4 py-3.5 border-b border-white/5 shrink-0">
+              <span className="text-sm font-semibold">Editing Interview</span>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              {editCandidate ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${avatarColor(editCandidate.id)} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
+                      {`${editCandidate.first_name[0]}${editCandidate.last_name[0]}`.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white">{editCandidate.first_name} {editCandidate.last_name}</p>
+                      <p className="text-xs text-gray-500 truncate">{editCandidate.email}</p>
+                    </div>
+                  </div>
+                  {editJob && (
+                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">POSITION</p>
+                      <p className="text-sm text-white">{editJob.title}</p>
+                    </div>
+                  )}
+                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                    <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">STATUS</p>
+                    <span className="inline-flex items-center gap-1.5 text-sm text-blue-400 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      Scheduled
+                    </span>
+                  </div>
+                  {editInterview && (
+                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">CREATED</p>
+                      <p className="text-sm text-gray-400">{new Date(editInterview.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-24">
+                  <div className="w-6 h-6 border-2 border-white/10 border-t-[#4ade80] rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="w-72 shrink-0 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
           <div className="px-4 py-3.5 border-b border-white/5 shrink-0">
             <div className="flex items-center justify-between mb-2.5">
@@ -535,6 +680,7 @@ export default function InterviewSetupPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Column 2 — Interview Questions */}
         <div className="flex-1 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
@@ -884,8 +1030,17 @@ export default function InterviewSetupPage() {
         </div>
       </div>
 
-      {/* Sending overlay */}
+      {/* Sending overlay — only in create mode */}
       {sending && <SendingOverlay />}
     </div>
+  )
+}
+
+// wrap in Suspense so useSearchParams works correctly
+export default function InterviewSetupPage() {
+  return (
+    <Suspense>
+      <InterviewSetupContent />
+    </Suspense>
   )
 }
