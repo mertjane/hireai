@@ -1,30 +1,53 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { X, Mail, Phone, Calendar, Briefcase, Sparkles, FileText } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { X, Mail, Phone, Calendar, Briefcase, Sparkles, FileText, ExternalLink, ChevronDown } from 'lucide-react'
+import ScoreRing from '@/components/ui/score-ring'
+import { apiInstance } from '@/services/config/axios.config'
 import { avatarColor } from '@/lib/colors'
 import { formatDate } from '@/lib/date'
 import type { Candidate, CandidateStatus } from '@/types/candidate'
+import type { Interview } from '@/types/interview'
 import type { Job } from '@/types/job'
 
 const STATUS_STYLES: Record<CandidateStatus, { dot: string; bg: string; text: string; label: string }> = {
   pending:     { dot: 'bg-gray-400',  bg: 'bg-gray-400/10',  text: 'text-gray-400',  label: 'Pending Invite' },
   in_progress: { dot: 'bg-amber-400', bg: 'bg-amber-400/10', text: 'text-amber-400', label: 'In Progress' },
+  completed:   { dot: 'bg-[#4ade80]', bg: 'bg-[#4ade80]/10', text: 'text-[#4ade80]', label: 'Completed' },
   dismissed:   { dot: 'bg-red-400',   bg: 'bg-red-400/10',   text: 'text-red-400',   label: 'Dismissed' },
+  hired:       { dot: 'bg-violet-400', bg: 'bg-violet-400/10', text: 'text-violet-400', label: 'Hired' },
 }
+
+// statuses the user can manually set from the detail panel
+const MANUAL_STATUSES: CandidateStatus[] = ['in_progress', 'completed', 'hired', 'dismissed']
 
 interface Props {
   candidate: Candidate
   job: Job | undefined
+  interview?: Interview
   onClose: () => void
+  onViewInterview?: (interviewId: string) => void
+  onStatusChange?: (id: string, status: CandidateStatus) => void
 }
 
-export default function ApplicantDetailModal({ candidate: c, job, onClose }: Props) {
+export default function ApplicantDetailModal({ candidate: c, job, interview, onClose, onViewInterview, onStatusChange }: Props) {
   const [visible, setVisible] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [currentStatus, setCurrentStatus] = useState<CandidateStatus>(c.status)
+  const statusRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 10)
     return () => clearTimeout(t)
+  }, [])
+
+  // close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) setStatusOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   const handleClose = () => {
@@ -32,7 +55,20 @@ export default function ApplicantDetailModal({ candidate: c, job, onClose }: Pro
     setTimeout(onClose, 300)
   }
 
-  const st = STATUS_STYLES[c.status]
+  // update candidate status via API
+  const handleStatusChange = async (status: CandidateStatus) => {
+    setStatusOpen(false)
+    if (status === currentStatus) return
+    try {
+      await apiInstance.put(`/candidates/${c.id}`, { status })
+      setCurrentStatus(status)
+      onStatusChange?.(c.id, status)
+    } catch (err) {
+      console.error('[applicant] status update failed', err)
+    }
+  }
+
+  const st = STATUS_STYLES[currentStatus]
   const initials = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase()
   const color = avatarColor(c.id)
 
@@ -90,13 +126,39 @@ export default function ApplicantDetailModal({ candidate: c, job, onClose }: Pro
           {/* Left — details */}
           <div className="w-72 shrink-0 flex flex-col gap-6 p-6 border-r border-white/5 overflow-y-auto">
 
-            {/* Status */}
+            {/* Status — clickable dropdown to change */}
             <div>
               <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-2">STATUS</p>
-              <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${st.text} ${st.bg} px-2.5 py-1 rounded-full`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                {st.label}
-              </span>
+              <div className="relative" ref={statusRef}>
+                <button
+                  onClick={() => setStatusOpen(!statusOpen)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold ${st.text} ${st.bg} px-2.5 py-1 rounded-full hover:brightness-125 transition-all`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                  {st.label}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${statusOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {statusOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 bg-[#161B22] border border-white/10 rounded-xl py-1.5 shadow-xl z-10 min-w-[140px]">
+                    {MANUAL_STATUSES.map((s) => {
+                      const opt = STATUS_STYLES[s]
+                      const active = s === currentStatus
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleStatusChange(s)}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors ${
+                            active ? `${opt.text} bg-white/5` : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${opt.dot}`} />
+                          {opt.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Contact */}
@@ -174,6 +236,50 @@ export default function ApplicantDetailModal({ candidate: c, job, onClose }: Pro
                 <p className="text-xs text-gray-400 leading-relaxed">{aiSummary}</p>
               </div>
             </div>
+
+            {/* Interview info — score, comment, link to full detail */}
+            {interview && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-2.5">INTERVIEW</p>
+                <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3.5 flex flex-col gap-3">
+                  {/* status */}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-bold ${
+                      interview.status === 'completed' ? 'text-[#4ade80]' :
+                      interview.status === 'scheduled' ? 'text-blue-400' :
+                      interview.status === 'cancelled' ? 'text-gray-400' : 'text-red-400'
+                    }`}>
+                      {interview.status.toUpperCase().replace('_', ' ')}
+                    </span>
+                    <span className="text-[10px] text-gray-500">{formatDate(interview.scheduled_at)}</span>
+                  </div>
+
+                  {/* score ring + AI comment when available */}
+                  {interview.status === 'completed' && interview.final_score > 0 && (
+                    <div className="flex items-start gap-3">
+                      <ScoreRing score={interview.final_score} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-bold text-white">{interview.final_score}/100</span>
+                        {interview.ai_comment && (
+                          <p className="text-xs text-gray-400 italic mt-1 leading-relaxed">{interview.ai_comment}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* link to full interview detail */}
+                  {onViewInterview && (
+                    <button
+                      onClick={() => { handleClose(); onViewInterview(interview.id) }}
+                      className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-xs font-semibold text-gray-400 bg-white/5 hover:bg-white/[0.08] hover:text-white transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View Full Interview
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
           </div>
 
