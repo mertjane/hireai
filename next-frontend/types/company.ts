@@ -10,6 +10,7 @@ export interface Company {
 export interface AuthResponse {
   profile: Company
   token: string
+  refreshToken?: string
 }
 
 export interface SignInData {

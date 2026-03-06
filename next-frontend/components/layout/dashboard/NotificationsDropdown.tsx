@@ -31,7 +31,7 @@ export default function NotificationsDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+        className="relative w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <Bell className="w-4 h-4 hover:rotate-12 transition-transform duration-200" />
         {unreadCount > 0 && (
@@ -41,14 +41,14 @@ export default function NotificationsDropdown() {
 
       {/* Dropdown */}
       <div
-        className={`absolute top-full right-0 mt-2 w-80 bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${
+        className={`absolute top-full right-0 mt-2 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${
           open
             ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 scale-95 -translate-y-1 pointer-events-none'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-semibold">Notifications</span>
           {unreadCount > 0 && (
             <span className="text-[10px] font-bold bg-[#4ade80]/15 text-[#4ade80] px-2 py-0.5 rounded-full">
@@ -60,7 +60,7 @@ export default function NotificationsDropdown() {
         {/* Items */}
         <div className="max-h-72 overflow-y-auto">
           {recent.length === 0 ? (
-            <p className="text-sm text-gray-600 text-center py-8">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No notifications yet.</p>
           ) : (
             recent.map((c) => {
               const color = avatarColor(c.id)
@@ -68,17 +68,17 @@ export default function NotificationsDropdown() {
               return (
                 <div
                   key={c.id}
-                  className="flex items-start gap-3 px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-colors"
+                  className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-muted/40 transition-colors"
                 >
-                  <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5`}>
+                  <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-foreground text-[10px] font-bold shrink-0 mt-0.5`}>
                     {initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-white font-medium leading-tight">
+                    <p className="text-xs text-foreground font-medium leading-tight">
                       {c.first_name} {c.last_name}
                     </p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">New application received</p>
-                    <p className="text-[10px] text-gray-600 mt-1">{formatDate(c.applied_at)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">New application received</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{formatDate(c.applied_at)}</p>
                   </div>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] shrink-0 mt-1.5" />
                 </div>
@@ -88,7 +88,7 @@ export default function NotificationsDropdown() {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-white/5">
+        <div className="px-4 py-2.5 border-t border-border">
           <Link
             href="/dashboard/notifications"
             onClick={() => setOpen(false)}

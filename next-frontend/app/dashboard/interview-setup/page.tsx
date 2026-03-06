@@ -49,7 +49,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className={`relative w-9 h-5 rounded-full transition-colors ${value ? 'bg-[#4ade80]' : 'bg-white/10'}`}
+      className={`relative w-9 h-5 rounded-full transition-colors ${value ? 'bg-[#4ade80]' : 'bg-muted'}`}
     >
       <span
         className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0'}`}
@@ -67,12 +67,12 @@ function SendingOverlay() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex flex-col items-center justify-center gap-6">
-      <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-[#4ade80] animate-spin" />
+      <div className="w-16 h-16 rounded-full border-4 border-border border-t-[#4ade80] animate-spin" />
       <div className="text-center">
-        <p className="text-white font-bold text-xl">Setting up interviews</p>
-        <p className="text-gray-400 text-sm mt-1.5">Creating interview links and notifying candidates...</p>
+        <p className="text-foreground font-bold text-xl">Setting up interviews</p>
+        <p className="text-muted-foreground text-sm mt-1.5">Creating interview links and notifying candidates...</p>
       </div>
-      <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+      <div className="w-64 h-1 bg-muted rounded-full overflow-hidden">
         <div
           className={`h-full bg-[#4ade80] rounded-full transition-all ease-linear ${progress ? 'w-full' : 'w-0'}`}
           style={{ transitionDuration: '3000ms' }}
@@ -523,7 +523,7 @@ function InterviewSetupContent() {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold">{isEditMode ? 'Edit Interview' : 'Interview Setup'}</h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             {isEditMode
               ? 'Modify questions, schedule, and duration'
               : `${selectedJob_obj ? `${selectedJob_obj.title} — ` : ''}configure questions and send interview links`
@@ -541,7 +541,7 @@ function InterviewSetupContent() {
               ? (saving ? 'Saving...' : settings.autoSendEmail ? 'Save & Send Email' : 'Save Changes')
               : settings.autoSendEmail ? 'Create & Send Links' : 'Create Interview'}
             {!isEditMode && visibleChecked > 0 && (
-              <span className="bg-[#0A0D12]/20 px-1.5 py-0.5 rounded-md text-xs font-bold">{visibleChecked}</span>
+              <span className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md text-xs font-bold">{visibleChecked}</span>
             )}
           </button>
         </div>
@@ -566,11 +566,11 @@ function InterviewSetupContent() {
             <div className="px-4 pb-3 flex flex-col gap-2">
               {createdLinks.map((link, i) => (
                 <div key={i} className="flex items-center gap-3 bg-black/20 rounded-lg px-3 py-2">
-                  <span className="text-xs text-white font-medium shrink-0">{link.name}</span>
-                  <span className="text-xs text-gray-500 truncate flex-1">{link.url}</span>
+                  <span className="text-xs text-foreground font-medium shrink-0">{link.name}</span>
+                  <span className="text-xs text-muted-foreground truncate flex-1">{link.url}</span>
                   <button
                     onClick={() => handleCopyLink(i, link.url)}
-                    className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
                     title="Copy link"
                   >
                     {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
@@ -579,7 +579,7 @@ function InterviewSetupContent() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
                     title="Open link"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -604,56 +604,56 @@ function InterviewSetupContent() {
 
         {/* Column 1 — Candidates (or candidate info in edit mode) */}
         {isEditMode ? (
-          <div className="w-72 shrink-0 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
-            <div className="px-4 py-3.5 border-b border-white/5 shrink-0">
+          <div className="w-72 shrink-0 bg-card border border-border rounded-2xl flex flex-col">
+            <div className="px-4 py-3.5 border-b border-border shrink-0">
               <span className="text-sm font-semibold">Editing Interview</span>
             </div>
             <div className="p-4 flex flex-col gap-4">
               {editCandidate ? (
                 <>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${avatarColor(editCandidate.id)} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
+                    <div className={`w-10 h-10 rounded-xl ${avatarColor(editCandidate.id)} flex items-center justify-center text-foreground text-sm font-bold shrink-0`}>
                       {`${editCandidate.first_name[0]}${editCandidate.last_name[0]}`.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white">{editCandidate.first_name} {editCandidate.last_name}</p>
-                      <p className="text-xs text-gray-500 truncate">{editCandidate.email}</p>
+                      <p className="text-sm font-medium text-foreground">{editCandidate.first_name} {editCandidate.last_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{editCandidate.email}</p>
                     </div>
                   </div>
                   {editJob && (
-                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">POSITION</p>
-                      <p className="text-sm text-white">{editJob.title}</p>
+                    <div className="bg-muted/40 border border-border rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-1">POSITION</p>
+                      <p className="text-sm text-foreground">{editJob.title}</p>
                     </div>
                   )}
-                  <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
-                    <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">STATUS</p>
+                  <div className="bg-muted/40 border border-border rounded-lg p-3">
+                    <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-1">STATUS</p>
                     <span className="inline-flex items-center gap-1.5 text-sm text-blue-400 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                       Scheduled
                     </span>
                   </div>
                   {editInterview && (
-                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-1">CREATED</p>
-                      <p className="text-sm text-gray-400">{new Date(editInterview.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <div className="bg-muted/40 border border-border rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-1">CREATED</p>
+                      <p className="text-sm text-muted-foreground">{new Date(editInterview.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                     </div>
                   )}
                 </>
               ) : (
                 <div className="flex items-center justify-center h-24">
-                  <div className="w-6 h-6 border-2 border-white/10 border-t-[#4ade80] rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-border border-t-[#4ade80] rounded-full animate-spin" />
                 </div>
               )}
             </div>
           </div>
         ) : (
-        <div className="w-72 shrink-0 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
-          <div className="px-4 py-3.5 border-b border-white/5 shrink-0">
+        <div className="w-72 shrink-0 bg-card border border-border rounded-2xl flex flex-col">
+          <div className="px-4 py-3.5 border-b border-border shrink-0">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-sm font-semibold">
                 Candidates
-                <span className="text-[10px] text-gray-500 font-normal ml-1.5">
+                <span className="text-[10px] text-muted-foreground font-normal ml-1.5">
                   {filteredCandidates.length}
                 </span>
               </span>
@@ -668,7 +668,7 @@ function InterviewSetupContent() {
                       ? 'bg-[#4ade80] border-[#4ade80]'
                       : someChecked
                       ? 'bg-[#4ade80]/30 border-[#4ade80]/40'
-                      : 'border-white/20 bg-transparent'
+                      : 'border-border bg-transparent'
                   }`}
                 >
                   {(allChecked || someChecked) && <Check className="w-3 h-3 text-[#0A0D12]" />}
@@ -688,22 +688,22 @@ function InterviewSetupContent() {
             )}
             {/* search candidates by name, email, or job */}
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search name, email, job..."
                 value={candidateSearch}
                 onChange={(e) => setCandidateSearch(e.target.value)}
-                className="w-full bg-[#0A0D12] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors"
+                className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-border transition-colors"
               />
             </div>
             {/* status filter buttons */}
             <div className="flex gap-1 mt-2">
               {([
-                { key: 'all',         label: 'All',    on: 'bg-white/15 border-white/30 text-white',              off: 'bg-transparent border-white/5 text-gray-600' },
-                { key: 'pending',     label: 'New',    on: 'bg-gray-400/15 border-gray-400/30 text-gray-400',     off: 'bg-transparent border-white/5 text-gray-600' },
-                { key: 'in_progress', label: 'Active', on: 'bg-amber-400/15 border-amber-400/30 text-amber-400',  off: 'bg-transparent border-white/5 text-gray-600' },
-                { key: 'completed',   label: 'Done',   on: 'bg-[#4ade80]/15 border-[#4ade80]/30 text-[#4ade80]', off: 'bg-transparent border-white/5 text-gray-600' },
+                { key: 'all',         label: 'All',    on: 'bg-muted border-border text-foreground',              off: 'bg-transparent border-border text-muted-foreground' },
+                { key: 'pending',     label: 'New',    on: 'bg-gray-400/15 border-gray-400/30 text-muted-foreground',     off: 'bg-transparent border-border text-muted-foreground' },
+                { key: 'in_progress', label: 'Active', on: 'bg-amber-400/15 border-amber-400/30 text-amber-400',  off: 'bg-transparent border-border text-muted-foreground' },
+                { key: 'completed',   label: 'Done',   on: 'bg-[#4ade80]/15 border-[#4ade80]/30 text-[#4ade80]', off: 'bg-transparent border-border text-muted-foreground' },
               ] as const).map(({ key, label, on, off }) => {
                 const isOn = key === 'all'
                   ? statusFilters.size === allStatuses.length
@@ -723,7 +723,7 @@ function InterviewSetupContent() {
 
           <div className="overflow-y-auto max-h-[calc(100vh-380px)] min-h-[320px] py-1">
             {filteredCandidates.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-gray-600 text-xs text-center px-4">
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-xs text-center px-4">
                 {candidates.length === 0
                   ? (selectedJob === ALL ? 'Select a job to see candidates' : 'No candidates found')
                   : 'No matching candidates'}
@@ -743,31 +743,31 @@ function InterviewSetupContent() {
                     className={`flex items-center gap-2.5 px-3 py-2.5 transition-colors ${
                       isActive
                         ? 'opacity-50 cursor-not-allowed'
-                        : `cursor-pointer hover:bg-white/[0.03] ${checked ? 'bg-[#4ade80]/5' : ''}`
+                        : `cursor-pointer hover:bg-muted/40 ${checked ? 'bg-[#4ade80]/5' : ''}`
                     }`}
                   >
                     <div
                       className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
                         isActive
-                          ? 'border-white/10 bg-white/5'
+                          ? 'border-border bg-muted'
                           : checked
                           ? 'bg-[#4ade80] border-[#4ade80]'
-                          : 'border-white/20 bg-transparent'
+                          : 'border-border bg-transparent'
                       }`}
                     >
                       {checked && <Check className="w-3 h-3 text-[#0A0D12]" />}
                     </div>
-                    <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+                    <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-foreground text-[10px] font-bold shrink-0`}>
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-medium text-white truncate leading-tight">
+                        <p className="text-xs font-medium text-foreground truncate leading-tight">
                           {c.first_name} {c.last_name}
                         </p>
                         {/* status badge — right-aligned */}
                         {c.status === 'pending' && (
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-400/10 text-gray-400 shrink-0">New</span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-400/10 text-muted-foreground shrink-0">New</span>
                         )}
                         {c.status === 'in_progress' && (
                           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-400/10 text-amber-400 shrink-0">Active</span>
@@ -778,7 +778,7 @@ function InterviewSetupContent() {
                       </div>
                       {/* job title — always shown below name */}
                       {job && (
-                        <p className="text-[9px] text-gray-500 truncate mt-0.5">{job.title}</p>
+                        <p className="text-[9px] text-muted-foreground truncate mt-0.5">{job.title}</p>
                       )}
                     </div>
                   </div>
@@ -791,25 +791,25 @@ function InterviewSetupContent() {
 
         {/* Column 2 — Interview Questions + Settings */}
         <div className="flex-1 flex flex-col gap-4">
-        <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col flex-1">
-          <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
+        <div className="bg-card border border-border rounded-2xl flex flex-col flex-1">
+          <div className="px-5 py-3.5 border-b border-border shrink-0">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">Interview Questions</h3>
               <div className="flex items-center gap-3">
                 {/* estimated duration including ~10s transition between questions */}
                 {selected.length > 0 && (
-                  <span className="text-[10px] text-gray-600">
+                  <span className="text-[10px] text-muted-foreground">
                     ~{estimatedMinutes}min
                   </span>
                 )}
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {selected.length} question{selected.length !== 1 ? 's' : ''}
                 </span>
                 {/* remove all selected questions at once */}
                 {selected.length > 0 && (
                   <button
                     onClick={() => setSelected([])}
-                    className="text-[10px] text-gray-500 hover:text-red-400 transition-colors"
+                    className="text-[10px] text-muted-foreground hover:text-red-400 transition-colors"
                   >
                     Clear
                   </button>
@@ -820,15 +820,15 @@ function InterviewSetupContent() {
               {/* Date picker */}
               <Popover open={calOpen} onOpenChange={setCalOpen}>
                 <PopoverTrigger asChild>
-                  <button className="flex items-center gap-2 bg-[#0A0D12] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-300 hover:border-white/20 transition-colors cursor-pointer min-w-0 flex-1">
-                    <CalendarIcon className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  <button className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground hover:border-border transition-colors cursor-pointer min-w-0 flex-1">
+                    <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate">
                       {selectedDate ? format(selectedDate, 'MMM d, yyyy') : 'Pick a date'}
                     </span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-auto p-0 bg-[#0D1117] border border-white/10 rounded-2xl shadow-2xl"
+                  className="w-auto p-0 bg-card border border-border rounded-2xl shadow-2xl"
                   align="start"
                 >
                   <Calendar
@@ -837,15 +837,15 @@ function InterviewSetupContent() {
                     onSelect={(d) => { setSelectedDate(d); setCalOpen(false) }}
                     disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                     initialFocus
-                    className="text-white [--rdp-accent-color:#4ade80] [--rdp-accent-color-dark:#4ade80]"
+                    className="text-foreground [--rdp-accent-color:#4ade80] [--rdp-accent-color-dark:#4ade80]"
                     classNames={{
-                      day: 'text-gray-300 hover:bg-white/5 rounded-lg',
-                      today: 'bg-white/10 text-white rounded-lg',
+                      day: 'text-foreground hover:bg-muted rounded-lg',
+                      today: 'bg-muted text-foreground rounded-lg',
                       selected: '!bg-[#4ade80] !text-[#0A0D12] rounded-lg font-bold',
                       disabled: 'opacity-30 cursor-not-allowed',
-                      caption_label: 'text-white font-semibold text-sm',
-                      nav_button: 'text-gray-400 hover:text-white',
-                      head_cell: 'text-gray-500 text-xs font-medium',
+                      caption_label: 'text-foreground font-semibold text-sm',
+                      nav_button: 'text-muted-foreground hover:text-foreground',
+                      head_cell: 'text-muted-foreground text-xs font-medium',
                       outside: 'opacity-30',
                     }}
                   />
@@ -853,19 +853,19 @@ function InterviewSetupContent() {
               </Popover>
 
               {/* Time picker */}
-              <div className="flex items-center gap-1.5 bg-[#0A0D12] border border-white/10 rounded-xl px-3 py-1.5 shrink-0">
-                <Clock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+              <div className="flex items-center gap-1.5 bg-background border border-border rounded-xl px-3 py-1.5 shrink-0">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <input
                   type="time"
                   value={selectedTime}
                   onChange={(e) => setSelectedTime(e.target.value)}
-                  className="bg-transparent text-xs text-gray-300 outline-none cursor-pointer w-[72px]"
+                  className="bg-transparent text-xs text-foreground outline-none cursor-pointer w-[72px]"
                 />
               </div>
 
               {/* auto-calculated duration shown as a label */}
               {selected.length > 0 && (
-                <span className="bg-[#0A0D12] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-gray-400 shrink-0">
+                <span className="bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-muted-foreground shrink-0">
                   ~{estimatedMinutes} min
                 </span>
               )}
@@ -874,7 +874,7 @@ function InterviewSetupContent() {
 
           <div className="overflow-y-auto flex-1 min-h-[120px] p-4">
             {selected.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-gray-600 text-sm">
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
                 Add questions from the Question Bank →
               </div>
             ) : (
@@ -892,33 +892,33 @@ function InterviewSetupContent() {
                       className={`flex items-start gap-3 border rounded-xl p-3.5 transition-all select-none ${
                         dragOverIdx === idx
                           ? 'border-[#4ade80]/40 bg-[#4ade80]/5'
-                          : 'bg-white/[0.03] border-white/5'
+                          : 'bg-muted/40 border-border'
                       }`}
                     >
                       <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                        <GripVertical className="w-4 h-4 text-gray-600 cursor-grab active:cursor-grabbing" />
-                        <span className="w-5 h-5 rounded bg-white/5 text-gray-500 text-[10px] font-bold flex items-center justify-center">
+                        <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                        <span className="w-5 h-5 rounded bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center">
                           {idx + 1}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white leading-snug">{item.question.question}</p>
+                        <p className="text-sm text-foreground leading-snug">{item.question.question}</p>
                         <div className="flex items-center gap-3 mt-2">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cs.bg} ${cs.text}`}>
                             {item.question.category.toUpperCase()}
                           </span>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <span>Timer:</span>
                             <button
                               onClick={() => adjustTimer(item.question.id, -15)}
-                              className="w-5 h-5 rounded flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
+                              className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted transition-colors"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="text-white font-medium w-8 text-center">{item.timer}s</span>
+                            <span className="text-foreground font-medium w-8 text-center">{item.timer}s</span>
                             <button
                               onClick={() => adjustTimer(item.question.id, 15)}
-                              className="w-5 h-5 rounded flex items-center justify-center bg-white/5 hover:bg-white/10 transition-colors"
+                              className="w-5 h-5 rounded flex items-center justify-center bg-muted hover:bg-muted transition-colors"
                             >
                               <Plus className="w-3 h-3" />
                             </button>
@@ -927,7 +927,7 @@ function InterviewSetupContent() {
                       </div>
                       <button
                         onClick={() => removeQuestion(item.question.id)}
-                        className="p-1 rounded-lg text-gray-700 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+                        className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -941,11 +941,11 @@ function InterviewSetupContent() {
           </div>
 
           {/* Interview Settings — separate block below questions */}
-          <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-5">
+          <div className="bg-card border border-border rounded-2xl p-5">
             <h3 className="font-semibold text-sm mb-4">Interview Settings</h3>
             <div className="flex flex-col gap-4">
               <div>
-                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">DEFAULT ANSWER TIME</p>
+                <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-2">DEFAULT ANSWER TIME</p>
                 <CustomSelect
                   value={String(settings.defaultTimer)}
                   onChange={(v) => setSettings((s) => ({ ...s, defaultTimer: Number(v) }))}
@@ -962,8 +962,8 @@ function InterviewSetupContent() {
               {/* auto-send email toggle */}
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-white">Auto-send invitation email</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm text-foreground">Auto-send invitation email</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {isEditMode ? 'Resend updated interview details to candidate' : 'Email interview link & PIN to candidates on create'}
                   </p>
                 </div>
@@ -975,7 +975,7 @@ function InterviewSetupContent() {
 
               {/* AI voice provider selector */}
               <div>
-                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">VOICE ENGINE</p>
+                <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-2">VOICE ENGINE</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'elevenlabs-free', label: 'ElevenLabs Free', enabled: true },
@@ -990,8 +990,8 @@ function InterviewSetupContent() {
                         settings.voiceProvider === opt.value
                           ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
                           : opt.enabled
-                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
-                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                            ? 'bg-muted border-border text-foreground hover:border-border'
+                            : 'bg-muted/40 border-border text-muted-foreground cursor-not-allowed'
                       }`}
                     >
                       {opt.label}
@@ -1001,12 +1001,12 @@ function InterviewSetupContent() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1.5">Questions are read aloud to candidates</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Questions are read aloud to candidates</p>
               </div>
 
               {/* AI transcription provider selector */}
               <div>
-                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">TRANSCRIPTION</p>
+                <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-2">TRANSCRIPTION</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'browser', label: 'Browser API', enabled: true },
@@ -1021,8 +1021,8 @@ function InterviewSetupContent() {
                         settings.transcriptionProvider === opt.value
                           ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
                           : opt.enabled
-                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
-                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                            ? 'bg-muted border-border text-foreground hover:border-border'
+                            : 'bg-muted/40 border-border text-muted-foreground cursor-not-allowed'
                       }`}
                     >
                       {opt.label}
@@ -1032,12 +1032,12 @@ function InterviewSetupContent() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1.5">Candidate answers transcribed automatically</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Candidate answers transcribed automatically</p>
               </div>
 
               {/* interview language selector */}
               <div>
-                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">INTERVIEW LANGUAGE</p>
+                <p className="text-[10px] text-muted-foreground tracking-widest font-semibold mb-2">INTERVIEW LANGUAGE</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'en', label: 'English', enabled: true },
@@ -1054,8 +1054,8 @@ function InterviewSetupContent() {
                         settings.language === opt.value
                           ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
                           : opt.enabled
-                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
-                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                            ? 'bg-muted border-border text-foreground hover:border-border'
+                            : 'bg-muted/40 border-border text-muted-foreground cursor-not-allowed'
                       }`}
                     >
                       {opt.label}
@@ -1065,7 +1065,7 @@ function InterviewSetupContent() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1.5">TTS and transcription language for the interview</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">TTS and transcription language for the interview</p>
               </div>
             </div>
           </div>
@@ -1073,13 +1073,13 @@ function InterviewSetupContent() {
 
         {/* Column 3 — Question Bank */}
         <div className="w-72 shrink-0 flex flex-col">
-          <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col h-[calc(100vh-180px)]">
-            <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
+          <div className="bg-card border border-border rounded-2xl flex flex-col h-[calc(100vh-180px)]">
+            <div className="px-5 py-3.5 border-b border-border shrink-0">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm">Question Bank</h3>
                 <button
                   onClick={() => setShowCreateQ(!showCreateQ)}
-                  className="w-6 h-6 rounded-lg bg-white/5 hover:bg-[#4ade80] hover:text-[#0A0D12] text-gray-400 flex items-center justify-center transition-colors"
+                  className="w-6 h-6 rounded-lg bg-muted hover:bg-[#4ade80] hover:text-[#0A0D12] text-muted-foreground flex items-center justify-center transition-colors"
                   title="Add new question"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -1094,8 +1094,8 @@ function InterviewSetupContent() {
                     onClick={() => setQFilter(tab)}
                     className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${
                       qFilter === tab
-                        ? 'bg-white/10 text-white'
-                        : 'text-gray-500 hover:text-gray-300'
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     {tab === 'all' ? 'All' : 'Yours'}
@@ -1105,26 +1105,26 @@ function InterviewSetupContent() {
 
               {/* search input */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search questions..."
                   value={qSearch}
                   onChange={(e) => setQSearch(e.target.value)}
-                  className="w-full bg-[#0A0D12] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors"
+                  className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-border transition-colors"
                 />
               </div>
 
               {/* new question form */}
               {showCreateQ && (
-                <div className="mt-3 flex flex-col gap-2 p-3 bg-white/[0.03] border border-white/5 rounded-lg">
+                <div className="mt-3 flex flex-col gap-2 p-3 bg-muted/40 border border-border rounded-lg">
                   <textarea
                     value={newQText}
                     onChange={(e) => setNewQText(e.target.value)}
                     placeholder="Type your question..."
                     rows={2}
                     maxLength={500}
-                    className="w-full resize-none bg-[#0A0D12] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20"
+                    className="w-full resize-none bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-border"
                   />
                   <div className="relative">
                     <input
@@ -1133,7 +1133,7 @@ function InterviewSetupContent() {
                       value={newQCategory}
                       onChange={(e) => setNewQCategory(e.target.value)}
                       placeholder="Category (e.g. Technical)"
-                      className="w-full bg-[#0A0D12] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground outline-none focus:border-border"
                     />
                     <datalist id="category-list">
                       {existingCategories.map((cat) => (
@@ -1150,8 +1150,8 @@ function InterviewSetupContent() {
                       className="mt-0.5 accent-[#4ade80]"
                     />
                     <span className="flex flex-col">
-                      <span className="text-xs text-gray-300">Save to question bank</span>
-                      <span className="text-[10px] text-gray-600">Uncheck for one-time use</span>
+                      <span className="text-xs text-foreground">Save to question bank</span>
+                      <span className="text-[10px] text-muted-foreground">Uncheck for one-time use</span>
                     </span>
                   </label>
                   <div className="flex gap-2">
@@ -1164,7 +1164,7 @@ function InterviewSetupContent() {
                     </button>
                     <button
                       onClick={() => { setShowCreateQ(false); setNewQText(''); setNewQCategory(''); setSaveToBank(true) }}
-                      className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                      className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Cancel
                     </button>
@@ -1176,19 +1176,19 @@ function InterviewSetupContent() {
               {qLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-8 bg-white/5 rounded animate-pulse" />
+                    <div key={i} className="h-8 bg-muted rounded animate-pulse" />
                   ))}
                 </div>
               ) : qError ? (
                 <p className="text-xs text-red-400">{qError}</p>
               ) : Object.keys(grouped).length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-xs text-gray-400 mb-1">
+                  <p className="text-xs text-muted-foreground mb-1">
                     {questions.length === 0 ? 'No questions yet' : 'No matching questions'}
                   </p>
                   {questions.length === 0 && (
-                    <p className="text-[10px] text-gray-600">
-                      Click the <span className="text-gray-400">+</span> button above to create your first question
+                    <p className="text-[10px] text-muted-foreground">
+                      Click the <span className="text-muted-foreground">+</span> button above to create your first question
                     </p>
                   )}
                 </div>
@@ -1205,7 +1205,7 @@ function InterviewSetupContent() {
                           {/* add all questions from this category at once */}
                           <button
                             onClick={() => addCategoryQuestions(qs)}
-                            className="text-[9px] text-gray-500 hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-white/5"
+                            className="text-[9px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
                           >
                             Add all
                           </button>
@@ -1217,15 +1217,15 @@ function InterviewSetupContent() {
                               <div
                                 key={q.id}
                                 onClick={() => addQuestion(q)}
-                                className={`flex items-start justify-between gap-2 px-2 py-2 rounded-lg transition-colors group/q ${isAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}
+                                className={`flex items-start justify-between gap-2 px-2 py-2 rounded-lg transition-colors group/q ${isAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted cursor-pointer'}`}
                               >
-                                <p className="text-xs text-gray-300 leading-snug">{q.question}</p>
+                                <p className="text-xs text-foreground leading-snug">{q.question}</p>
                                 <div className="flex items-center gap-0.5 shrink-0">
                                   {/* only company-owned questions can be deleted */}
                                   {q.company_id && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id) }}
-                                      className="w-5 h-5 rounded-full text-gray-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors opacity-0 group-hover/q:opacity-100"
+                                      className="w-5 h-5 rounded-full text-muted-foreground hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors opacity-0 group-hover/q:opacity-100"
                                     >
                                       <Trash2 className="w-2.5 h-2.5" />
                                     </button>
@@ -1233,7 +1233,7 @@ function InterviewSetupContent() {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); addQuestion(q) }}
                                     disabled={isAdded}
-                                    className="w-5 h-5 rounded-full bg-white/10 hover:bg-[#4ade80] hover:text-[#0A0D12] text-gray-400 flex items-center justify-center transition-colors disabled:cursor-not-allowed"
+                                    className="w-5 h-5 rounded-full bg-muted hover:bg-[#4ade80] hover:text-[#0A0D12] text-muted-foreground flex items-center justify-center transition-colors disabled:cursor-not-allowed"
                                   >
                                     <Plus className="w-3 h-3" />
                                   </button>

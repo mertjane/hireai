@@ -14,7 +14,7 @@ import type { Job } from '@/types/job'
 const STATUS_STYLES: Record<string, { dot: string; text: string; label: string }> = {
   scheduled:  { dot: 'bg-blue-400',   text: 'text-blue-400',   label: 'Scheduled' },
   completed:  { dot: 'bg-[#4ade80]',  text: 'text-[#4ade80]',  label: 'Completed' },
-  cancelled:  { dot: 'bg-gray-400',   text: 'text-gray-400',   label: 'Cancelled' },
+  cancelled:  { dot: 'bg-gray-400',   text: 'text-muted-foreground',   label: 'Cancelled' },
   no_show:    { dot: 'bg-red-400',    text: 'text-red-400',    label: 'No Show' },
 }
 
@@ -33,7 +33,7 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`w-4 h-4 ${n <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-700'}`}
+          className={`w-4 h-4 ${n <= rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground'}`}
         />
       ))}
     </div>
@@ -85,20 +85,20 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
   const answeredCount = questions.filter((q) => q.q_answer).length
 
   return (
-    <div className="flex flex-col h-full bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
+    <div className="flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden">
       {/* top bar — candidate info and close button */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 shrink-0">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border shrink-0">
         {/* clickable link to applicant detail on the applicants page */}
         <Link
           href={`/dashboard/applicants?candidate=${interview.candidate_id}`}
           className="flex items-center gap-3 min-w-0 group"
         >
-          <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+          <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center text-foreground text-xs font-bold shrink-0`}>
             {initials}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-white text-sm leading-tight truncate group-hover:text-[#4ade80] transition-colors">{fullName}</h3>
-            <p className="text-[11px] text-gray-500 truncate">{candidate?.email}</p>
+            <h3 className="font-semibold text-foreground text-sm leading-tight truncate group-hover:text-[#4ade80] transition-colors">{fullName}</h3>
+            <p className="text-[11px] text-muted-foreground truncate">{candidate?.email}</p>
           </div>
         </Link>
         <div className="flex items-center gap-1 shrink-0">
@@ -106,7 +106,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
           {interview.status === 'scheduled' && (
             <Link
               href={`/dashboard/interview-setup?edit=${interview.id}`}
-              className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               title="Edit interview"
             >
               <Pencil className="w-4 h-4" />
@@ -114,7 +114,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
           )}
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -135,11 +135,11 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
               {job.title}
             </span>
           )}
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Calendar className="w-3 h-3" />
             {formatDate(interview.scheduled_at)}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Clock className="w-3 h-3" />
             {interview.duration_minutes}m
           </div>
@@ -149,7 +149,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             <div className="flex items-center gap-1.5 ml-auto">
               <button
                 onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[11px] text-gray-300 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-muted border border-border rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors"
               >
                 {copied ? <Check className="w-3 h-3 text-[#4ade80]" /> : <Copy className="w-3 h-3" />}
                 {copied ? 'Copied' : 'Copy'}
@@ -158,7 +158,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
                 href={interviewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[11px] text-gray-300 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-muted border border-border rounded-lg text-[11px] text-foreground hover:bg-muted transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
                 Open
@@ -169,7 +169,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
                 className={`flex items-center gap-1.5 px-2.5 py-1 border rounded-lg text-[11px] transition-colors ${
                   resent
                     ? 'bg-[#4ade80]/10 border-[#4ade80]/20 text-[#4ade80]'
-                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    : 'bg-muted border-border text-foreground hover:bg-muted'
                 } disabled:opacity-60`}
               >
                 {resent ? <Check className="w-3 h-3" /> : <Send className="w-3 h-3" />}
@@ -181,38 +181,38 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
 
         {/* score card — only shown when there's a score or completed */}
         {interview.final_score > 0 ? (
-          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
-            <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
+          <div className="bg-background border border-border rounded-xl p-3.5">
+            <p className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-1.5">SCORE</p>
             <div className="flex items-end gap-1.5">
               <span className={`text-2xl font-bold ${interview.final_score >= 70 ? 'text-[#4ade80]' : interview.final_score >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
                 {interview.final_score}
               </span>
-              <span className="text-xs text-gray-500 mb-0.5">/ 100</span>
+              <span className="text-xs text-muted-foreground mb-0.5">/ 100</span>
             </div>
             {interview.ai_comment && (
-              <p className="text-sm text-gray-400 italic mt-2">{interview.ai_comment}</p>
+              <p className="text-sm text-muted-foreground italic mt-2">{interview.ai_comment}</p>
             )}
           </div>
         ) : interview.status === 'completed' && (
-          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
-            <p className="text-[10px] font-semibold text-gray-500 tracking-widest mb-1.5">SCORE</p>
-            <span className="text-sm text-gray-500">Not scored yet</span>
+          <div className="bg-background border border-border rounded-xl p-3.5">
+            <p className="text-[10px] font-semibold text-muted-foreground tracking-widest mb-1.5">SCORE</p>
+            <span className="text-sm text-muted-foreground">Not scored yet</span>
           </div>
         )}
 
         {/* candidate feedback */}
         {interview.feedback_rating != null && (
-          <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
+          <div className="bg-background border border-border rounded-xl p-3.5">
             <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="w-3 h-3 text-gray-500" />
-              <p className="text-[10px] font-semibold text-gray-500 tracking-widest">CANDIDATE FEEDBACK</p>
+              <MessageSquare className="w-3 h-3 text-muted-foreground" />
+              <p className="text-[10px] font-semibold text-muted-foreground tracking-widest">CANDIDATE FEEDBACK</p>
             </div>
             <div className="flex items-center gap-3 mb-1.5">
               <StarRating rating={interview.feedback_rating} />
-              <span className="text-sm text-gray-400">{interview.feedback_rating}/5</span>
+              <span className="text-sm text-muted-foreground">{interview.feedback_rating}/5</span>
             </div>
             {interview.feedback_comment && (
-              <p className="text-sm text-gray-300 leading-relaxed mt-1.5 italic">
+              <p className="text-sm text-foreground leading-relaxed mt-1.5 italic">
                 &ldquo;{interview.feedback_comment}&rdquo;
               </p>
             )}
@@ -222,10 +222,10 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
         {/* questions and answers */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-semibold text-gray-500 tracking-widest">
+            <p className="text-[10px] font-semibold text-muted-foreground tracking-widest">
               QUESTIONS & ANSWERS
             </p>
-            <span className="text-[11px] font-semibold text-gray-400">
+            <span className="text-[11px] font-semibold text-muted-foreground">
               {qLoading ? '...' : `${answeredCount}/${questions.length} answered`}
             </span>
           </div>
@@ -233,42 +233,42 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
           {qLoading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="bg-[#0A0D12] border border-white/5 rounded-xl p-4">
-                  <div className="h-4 bg-white/5 rounded animate-pulse w-3/4 mb-3" />
-                  <div className="h-3 bg-white/5 rounded animate-pulse w-full mb-1" />
-                  <div className="h-3 bg-white/5 rounded animate-pulse w-2/3" />
+                <div key={n} className="bg-background border border-border rounded-xl p-4">
+                  <div className="h-4 bg-muted rounded animate-pulse w-3/4 mb-3" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-full mb-1" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
                 </div>
               ))}
             </div>
           ) : questions.length === 0 ? (
-            <p className="text-sm text-gray-600">No questions assigned to this interview.</p>
+            <p className="text-sm text-muted-foreground">No questions assigned to this interview.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {questions.map((iq, idx) => (
-                <div key={iq.id} className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
+                <div key={iq.id} className="bg-background border border-border rounded-xl p-3.5">
                   {/* question header */}
                   <div className="flex items-start gap-2.5 mb-2.5">
-                    <span className="w-5 h-5 rounded-md bg-white/5 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-md bg-muted text-muted-foreground text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white leading-snug">{iq.questions.question}</p>
+                      <p className="text-sm text-foreground leading-snug">{iq.questions.question}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 text-gray-500">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                           {iq.questions.category}
                         </span>
-                        <span className="text-[10px] text-gray-600">{iq.q_timer}s</span>
+                        <span className="text-[10px] text-muted-foreground">{iq.q_timer}s</span>
                       </div>
                     </div>
                   </div>
 
                   {/* answer */}
                   {iq.q_answer ? (
-                    <div className="ml-7 bg-white/[0.02] border border-white/5 rounded-lg p-3">
-                      <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{iq.q_answer}</p>
+                    <div className="ml-7 bg-muted/40 border border-border rounded-lg p-3">
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{iq.q_answer}</p>
                     </div>
                   ) : (
-                    <p className="ml-7 text-xs text-gray-600 italic">No answer submitted</p>
+                    <p className="ml-7 text-xs text-muted-foreground italic">No answer submitted</p>
                   )}
                 </div>
               ))}
@@ -278,7 +278,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
 
         {/* delete button — available for completed and cancelled interviews */}
         {onDelete && (interview.status === 'completed' || interview.status === 'cancelled') && (
-          <div className="pt-3 border-t border-white/5">
+          <div className="pt-3 border-t border-border">
             {confirmDelete ? (
               <div className="flex items-center gap-2">
                 <button
@@ -290,7 +290,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:bg-white/10 transition-colors"
+                  className="px-3 py-2 bg-muted border border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
                 >
                   Cancel
                 </button>
@@ -298,7 +298,7 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-500 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-muted border border-border rounded-lg text-xs text-muted-foreground hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-colors"
               >
                 <Trash2 className="w-3 h-3" />
                 Delete Interview

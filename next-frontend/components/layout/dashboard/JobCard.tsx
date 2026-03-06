@@ -34,12 +34,12 @@ export default function JobCard({ job, applicantCount = 0, onView, onEdit, onPub
   const status = STATUS_STYLES[job.status]
 
   return (
-    <div className="bg-[#0D1117] border border-white/5 rounded-xl p-5 flex flex-col gap-4 hover:border-white/10 transition-colors">
+    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 hover:border-border transition-colors">
       {/* Title + status */}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-semibold text-white leading-tight">{job.title}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{job.department}</p>
+          <h3 className="font-semibold text-foreground leading-tight">{job.title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{job.department}</p>
         </div>
         <span className={`flex items-center gap-1.5 text-[11px] font-bold ${status.text} shrink-0`}>
           <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
@@ -48,7 +48,7 @@ export default function JobCard({ job, applicantCount = 0, onView, onEdit, onPub
       </div>
 
       {/* Meta */}
-      <div className="flex items-center justify-between gap-4 text-xs text-gray-500">
+      <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5" />
           {workTypeLabel(job.work_type)}
@@ -65,22 +65,22 @@ export default function JobCard({ job, applicantCount = 0, onView, onEdit, onPub
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+      <div className="flex items-center justify-between pt-4 border-t border-border">
         {job.status === 'draft' ? (
-          <span className="text-xs text-gray-600">Not published yet</span>
+          <span className="text-xs text-muted-foreground">Not published yet</span>
         ) : (
-          <span className="text-xs text-gray-400">
-            <span className="font-semibold text-white">{applicantCount}</span> applicants
+          <span className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{applicantCount}</span> applicants
           </span>
         )}
 
         <div className="flex gap-2">
           {job.status === 'active' && (
             <>
-              <button className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors">
+              <button className="text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:border-border hover:text-foreground transition-colors">
                 Setup Interview
               </button>
-              <button onClick={onView} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-gray-300 hover:bg-white/10 transition-colors">
+              <button onClick={onView} className="text-xs px-3 py-1.5 rounded-lg bg-muted text-foreground hover:bg-muted transition-colors">
                 View
               </button>
             </>
@@ -90,13 +90,13 @@ export default function JobCard({ job, applicantCount = 0, onView, onEdit, onPub
               <button onClick={onPublish} className="text-xs px-3 py-1.5 rounded-lg bg-[#4ade80] text-[#0A0D12] font-semibold hover:bg-[#22c55e] transition-colors">
                 Publish
               </button>
-              <button onClick={onEdit} className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors">
+              <button onClick={onEdit} className="text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:border-border hover:text-foreground transition-colors">
                 Edit
               </button>
             </>
           )}
           {job.status === 'closed' && (
-            <button className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors">
+            <button className="text-xs px-3 py-1.5 rounded-lg border border-border text-foreground hover:border-border hover:text-foreground transition-colors">
               View Results
             </button>
           )}
