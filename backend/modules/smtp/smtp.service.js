@@ -40,6 +40,7 @@ export const sendInterviewInvitation = async ({ to, firstName, jobTitle, company
     });
 };
 
+
 // Notify company HR that a candidate needs help during their interview
 export const sendHelpRequest = async ({ to, candidateName, companyName, message }) => {
     if (!resend) {

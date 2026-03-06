@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, Plus, ChevronDown } from 'lucide-react'
+import { Search, Plus } from 'lucide-react'
+import CustomSelect from '@/components/ui/custom-select'
 import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
 import { useCandidates } from '@/hooks/use-candidates'
@@ -85,33 +86,24 @@ export default function JobListingsPage() {
           />
         </div>
 
-        <div className="relative">
-          <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className="appearance-none bg-[#0D1117] border border-white/5 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/15 transition-colors cursor-pointer"
-          >
-            <option value={ALL}>All Departments</option>
-            {departments.filter((d) => d !== ALL).map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-        </div>
+        <CustomSelect
+          value={department}
+          onChange={setDepartment}
+          options={[{ value: ALL, label: 'All Departments' }, ...departments.filter((d) => d !== ALL).map((d) => ({ value: d, label: d }))]}
+          className="w-48"
+        />
 
-        <div className="relative">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as JobStatus | 'all')}
-            className="appearance-none bg-[#0D1117] border border-white/5 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/15 transition-colors cursor-pointer"
-          >
-            <option value={ALL}>All Statuses</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="closed">Closed</option>
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-        </div>
+        <CustomSelect
+          value={status}
+          onChange={(v) => setStatus(v as JobStatus | 'all')}
+          options={[
+            { value: ALL, label: 'All Statuses' },
+            { value: 'active', label: 'Active' },
+            { value: 'draft', label: 'Draft' },
+            { value: 'closed', label: 'Closed' },
+          ]}
+          className="w-40"
+        />
       </div>
 
       {/* Cards */}

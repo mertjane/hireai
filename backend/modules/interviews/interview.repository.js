@@ -63,6 +63,25 @@ export const updateInterview = async (id, company_id, updates) => {
     return data;
 };
 
+// permanently remove an interview and its linked questions
+export const deleteInterview = async (id, company_id) => {
+    // delete linked interview_questions first (FK dependency)
+    const { error: iqErr } = await supabase
+        .from('interview_questions')
+        .delete()
+        .eq('interview_id', id);
+
+    if (iqErr) throw iqErr;
+
+    const { error } = await supabase
+        .from('interviews')
+        .delete()
+        .eq('id', id)
+        .eq('company_id', company_id);
+
+    if (error) throw error;
+};
+
 // Update interview by token — used for public candidate-facing operations
 export const updateInterviewByToken = async (token, updates) => {
     const { data, error } = await supabase

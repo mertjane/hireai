@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import CustomSelect from '@/components/ui/custom-select'
 import type { Job, WorkType, JobStatus } from '@/types/job'
 import { createJob, updateJob, type JobPayload } from '@/services/api/jobs.api'
 
@@ -12,7 +13,7 @@ interface Props {
 }
 
 const INPUT = 'w-full bg-[#0A0D12] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors'
-const SELECT = 'w-full bg-[#0A0D12] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 transition-colors cursor-pointer'
+// SELECT const removed — replaced by CustomSelect component
 const LABEL = 'text-xs text-gray-400'
 
 export default function JobModal({ job, onClose, onSuccess }: Props) {
@@ -108,19 +109,27 @@ export default function JobModal({ job, onClose, onSuccess }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={LABEL}>Work Type</label>
-              <select value={form.work_type} onChange={set('work_type')} className={SELECT}>
-                <option value="on-site">On-site</option>
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
+              <CustomSelect
+                value={form.work_type}
+                onChange={(v) => setForm((f) => ({ ...f, work_type: v as WorkType }))}
+                options={[
+                  { value: 'on-site', label: 'On-site' },
+                  { value: 'remote', label: 'Remote' },
+                  { value: 'hybrid', label: 'Hybrid' },
+                ]}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={LABEL}>Status</label>
-              <select value={form.status} onChange={set('status')} className={SELECT}>
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                {isEdit && <option value="closed">Closed</option>}
-              </select>
+              <CustomSelect
+                value={form.status}
+                onChange={(v) => setForm((f) => ({ ...f, status: v as JobStatus }))}
+                options={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'active', label: 'Active' },
+                  ...(isEdit ? [{ value: 'closed', label: 'Closed' }] : []),
+                ]}
+              />
             </div>
           </div>
 

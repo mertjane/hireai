@@ -17,6 +17,8 @@ router.post('/', interviewController.scheduleInterview);
 router.get('/', interviewController.getInterviews);
 router.get('/:id', interviewController.getInterview);
 router.put('/:id', interviewController.updateInterview);
-router.delete('/:id', interviewController.cancelInterview);
+router.put('/:id/cancel', interviewController.cancelInterview);
+router.post('/:id/resend', interviewController.resendInvitation);
+router.delete('/:id', interviewController.deleteInterview);
 
 export default router;

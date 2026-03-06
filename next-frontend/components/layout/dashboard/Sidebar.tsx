@@ -11,7 +11,6 @@ import {
   BarChart2,
   Settings,
   LogOut,
-  Bell,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useJobs } from "@/hooks/use-jobs";
@@ -37,12 +36,6 @@ export default function Sidebar() {
           label: "Applicants",
           href: "/dashboard/applicants",
           icon: Users,
-          badge: 0,
-        },
-        {
-          label: "Notifications",
-          href: "/dashboard/notifications",
-          icon: Bell,
         },
       ],
     },
@@ -55,8 +48,8 @@ export default function Sidebar() {
           icon: SlidersHorizontal,
         },
         {
-          label: "Interview Results",
-          href: "/dashboard/results",
+          label: "Interviews",
+          href: "/dashboard/interviews",
           icon: BarChart2,
         },
       ],

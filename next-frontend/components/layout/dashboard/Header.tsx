@@ -3,15 +3,11 @@
 import { useAuth } from '@/hooks/use-auth'
 import NotificationsDropdown from './NotificationsDropdown'
 
-interface HeaderProps {
-  title: string
-}
 
-export default function Header({ title }: HeaderProps) {
+export default function Header() {
   const { company } = useAuth()
   return (
-    <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-6">
-      <h1 className="text-lg font-semibold">{title}</h1>
+    <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-end px-6">
       <div className="flex items-center gap-3">
         <NotificationsDropdown />
         <div className="flex items-center gap-2 ml-1">

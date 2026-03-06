@@ -11,8 +11,12 @@ export const createQuestion = async (payload) => {
     return data;
 };
 
-export const getQuestions = async (category) => {
+export const getQuestions = async (companyId, category) => {
     let query = supabase.from('questions').select('*');
+    // show default questions (no company) + this company's own questions
+    if (companyId) query = query.or(`company_id.is.null,company_id.eq.${companyId}`);
+    // exclude temporary questions from the bank listing
+    query = query.or('is_temporary.is.null,is_temporary.eq.false');
     if (category) query = query.eq('category', category);
 
     const { data, error } = await query.order('category', { ascending: true });
