@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Briefcase, Users, Clock, Activity, Plus } from 'lucide-react'
 import Link from 'next/link'
 import StatCard from '@/components/layout/dashboard/StatCard'
 import RecentActivity from '@/components/layout/dashboard/RecentActivity'
 import QuickActions from '@/components/layout/dashboard/QuickActions'
+import JobModal from '@/components/layout/dashboard/JobModal'
 import { useAuth } from '@/hooks/use-auth'
 import { useJobs } from '@/hooks/use-jobs'
 import { useCandidates } from '@/hooks/use-candidates'
@@ -13,9 +14,11 @@ import { useInterviews } from '@/hooks/use-interviews'
 
 export default function DashboardPage() {
   const { company } = useAuth()
-  const { jobs } = useJobs(company?.id ?? null)
+  const { jobs, mutate: mutateJobs } = useJobs(company?.id ?? null)
   const { candidates } = useCandidates()
   const { interviews } = useInterviews()
+
+  const [jobModalOpen, setJobModalOpen] = useState(false)
 
   // compute real stats from API data
   const stats = useMemo(() => {
@@ -23,7 +26,8 @@ export default function DashboardPage() {
     const totalApplicants = candidates.length
     const scheduled = interviews.filter((i) => i.status === 'scheduled').length
     const completed = interviews.filter((i) => i.status === 'completed').length
-    return { activeJobs, totalApplicants, scheduled, completed }
+    const pendingInvite = candidates.filter((c) => c.status === 'pending').length
+    return { activeJobs, totalApplicants, scheduled, completed, pendingInvite }
   }, [jobs, candidates, interviews])
 
   // pick a time-appropriate greeting
@@ -52,7 +56,7 @@ export default function DashboardPage() {
       borderColor: 'bg-blue-500',
       value: stats.totalApplicants,
       label: 'Total Applicants',
-      change: `across ${jobs.length} jobs`,
+      change: `${stats.pendingInvite} pending invite`,
       changeType: 'positive' as const,
     },
     {
@@ -87,13 +91,13 @@ export default function DashboardPage() {
             Here is what is happening with your hiring pipeline today.
           </p>
         </div>
-        <Link
-          href="/dashboard/jobs"
+        <button
+          onClick={() => setJobModalOpen(true)}
           className="flex items-center gap-2 bg-[#4ade80] text-[#0A0D12] text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#22c55e] transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Job Post
-        </Link>
+        </button>
       </div>
 
       {/* stats row */}
@@ -108,6 +112,14 @@ export default function DashboardPage() {
         <RecentActivity />
         <QuickActions />
       </div>
+
+      {/* job creation modal */}
+      {jobModalOpen && (
+        <JobModal
+          onClose={() => setJobModalOpen(false)}
+          onSuccess={() => { mutateJobs(); setJobModalOpen(false) }}
+        />
+      )}
     </div>
   )
 }

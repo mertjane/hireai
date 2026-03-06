@@ -26,7 +26,6 @@ const ACTIONS = [
     iconBg: 'bg-purple-500/10',
     iconColor: 'text-purple-400',
     label: 'View Interviews',
-    // description is set dynamically below
     description: '',
     href: '/dashboard/interviews',
   },
@@ -46,15 +45,14 @@ export default function QuickActions() {
           <li key={label}>
             <Link
               href={href}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/8 border border-white/5 hover:border-white/10 transition-colors text-left"
+              className="group w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/[0.08] border border-white/5 hover:border-white/10 transition-colors text-left"
             >
               <div className={`w-9 h-9 rounded-lg ${iconBg} flex items-center justify-center shrink-0`}>
-                <Icon className={`w-4 h-4 ${iconColor}`} />
+                <Icon className={`w-4 h-4 ${iconColor} group-hover:scale-110 transition-transform duration-200`} />
               </div>
               <div>
                 <div className="text-sm font-medium">{label}</div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  {/* show real count for interviews action */}
                   {label === 'View Interviews'
                     ? `${completedCount} completed interview${completedCount !== 1 ? 's' : ''}`
                     : description}
