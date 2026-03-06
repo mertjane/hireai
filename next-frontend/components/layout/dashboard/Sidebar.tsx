@@ -11,10 +11,10 @@ import {
   BarChart2,
   Settings,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useJobs } from "@/hooks/use-jobs";
-import { useCandidates } from "@/hooks/use-candidates";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -37,7 +37,12 @@ export default function Sidebar() {
           label: "Applicants",
           href: "/dashboard/applicants",
           icon: Users,
-          badge: 1,
+          badge: 0,
+        },
+        {
+          label: "Notifications",
+          href: "/dashboard/notifications",
+          icon: Bell,
         },
       ],
     },
@@ -110,14 +115,14 @@ export default function Sidebar() {
                   <li key={href}>
                     <Link
                       href={href}
-                      className={`flex items-center justify-between gap-2 px-2 py-2 rounded-lg text-sm transition-colors ${
+                      className={`group flex items-center justify-between gap-2 px-2 py-2 rounded-lg text-sm transition-colors ${
                         active
                           ? "bg-[#4ade80]/10 text-[#4ade80]"
                           : "text-gray-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
-                        <Icon className="w-4 h-4 shrink-0" />
+                        <Icon className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-150" />
                         {label}
                       </span>
                       {!!badge && (
@@ -137,9 +142,9 @@ export default function Sidebar() {
       {/* Sign out */}
       <button
         onClick={handleSignOut}
-        className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-colors mt-4"
+        className="group flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-colors mt-4"
       >
-        <LogOut className="w-4 h-4" />
+        <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-150" />
         Sign Out
       </button>
     </aside>
