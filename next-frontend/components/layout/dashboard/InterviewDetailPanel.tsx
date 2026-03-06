@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { X, Calendar, Clock, Star, MessageSquare, Copy, Check, ExternalLink, Pencil } from 'lucide-react'
+import { X, Calendar, Clock, Star, MessageSquare, Copy, Check, ExternalLink, Pencil, Trash2, Send } from 'lucide-react'
+import { apiInstance } from '@/services/config/axios.config'
 import { avatarColor } from '@/lib/colors'
 import { formatDate } from '@/lib/date'
 import { useInterviewQuestions } from '@/hooks/use-interview-questions'
@@ -22,6 +23,7 @@ interface Props {
   candidate: Candidate | undefined
   job: Job | undefined
   onClose: () => void
+  onDelete?: (id: string) => void
 }
 
 // renders 1-5 filled/empty stars
@@ -38,8 +40,11 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
-export default function InterviewDetailPanel({ interview, candidate, job, onClose }: Props) {
+export default function InterviewDetailPanel({ interview, candidate, job, onClose, onDelete }: Props) {
   const [copied, setCopied] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
   const { questions, isLoading: qLoading } = useInterviewQuestions(interview.id)
 
   // build the interview URL for copying
@@ -52,6 +57,21 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
     await navigator.clipboard.writeText(interviewUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // resend the interview invitation email with link + PIN
+  const handleResend = async () => {
+    if (resending || resent) return
+    setResending(true)
+    try {
+      await apiInstance.post(`/interviews/${interview.id}/resend`)
+      setResent(true)
+      setTimeout(() => setResent(false), 3000)
+    } catch {
+      // silently fail
+    } finally {
+      setResending(false)
+    }
   }
 
   const st = STATUS_STYLES[interview.status] ?? STATUS_STYLES.scheduled
@@ -68,15 +88,19 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
     <div className="flex flex-col h-full bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
       {/* top bar — candidate info and close button */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+        {/* clickable link to applicant detail on the applicants page */}
+        <Link
+          href={`/dashboard/applicants?candidate=${interview.candidate_id}`}
+          className="flex items-center gap-3 min-w-0 group"
+        >
           <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
             {initials}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-white text-sm leading-tight truncate">{fullName}</h3>
+            <h3 className="font-semibold text-white text-sm leading-tight truncate group-hover:text-[#4ade80] transition-colors">{fullName}</h3>
             <p className="text-[11px] text-gray-500 truncate">{candidate?.email}</p>
           </div>
-        </div>
+        </Link>
         <div className="flex items-center gap-1 shrink-0">
           {/* edit button — only for scheduled interviews */}
           {interview.status === 'scheduled' && (
@@ -139,6 +163,18 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
                 <ExternalLink className="w-3 h-3" />
                 Open
               </a>
+              <button
+                onClick={handleResend}
+                disabled={resending || resent}
+                className={`flex items-center gap-1.5 px-2.5 py-1 border rounded-lg text-[11px] transition-colors ${
+                  resent
+                    ? 'bg-[#4ade80]/10 border-[#4ade80]/20 text-[#4ade80]'
+                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                } disabled:opacity-60`}
+              >
+                {resent ? <Check className="w-3 h-3" /> : <Send className="w-3 h-3" />}
+                {resending ? 'Sending...' : resent ? 'Sent!' : 'Resend'}
+              </button>
             </div>
           )}
         </div>
@@ -153,6 +189,9 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
               </span>
               <span className="text-xs text-gray-500 mb-0.5">/ 100</span>
             </div>
+            {interview.ai_comment && (
+              <p className="text-sm text-gray-400 italic mt-2">{interview.ai_comment}</p>
+            )}
           </div>
         ) : interview.status === 'completed' && (
           <div className="bg-[#0A0D12] border border-white/5 rounded-xl p-3.5">
@@ -236,6 +275,37 @@ export default function InterviewDetailPanel({ interview, candidate, job, onClos
             </div>
           )}
         </div>
+
+        {/* delete button — available for completed and cancelled interviews */}
+        {onDelete && (interview.status === 'completed' || interview.status === 'cancelled') && (
+          <div className="pt-3 border-t border-white/5">
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onDelete(interview.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Confirm Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-400 hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-gray-500 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete Interview
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

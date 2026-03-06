@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { X, Upload, ChevronDown } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
+import CustomSelect from '@/components/ui/custom-select'
 import type { Job } from '@/types/job'
 
 interface Props {
@@ -97,19 +98,11 @@ export default function AddApplicantModal({ companyId, jobs, onClose, onSuccess 
 
           <div>
             <label className={labelCls}>POSITION</label>
-            <div className="relative">
-              <select
-                className="w-full appearance-none bg-[#0A0D12] border border-white/10 rounded-xl px-3 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 transition-colors cursor-pointer"
-                value={form.job_id}
-                onChange={set('job_id')}
-              >
-                <option value="">Select a position</option>
-                {jobs.map((j) => (
-                  <option key={j.id} value={j.id}>{j.title}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-            </div>
+            <CustomSelect
+              value={form.job_id}
+              onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+              options={[{ value: '', label: 'Select a position' }, ...jobs.map((j) => ({ value: j.id, label: j.title }))]}
+            />
           </div>
 
           <div>

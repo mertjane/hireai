@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { X, Plus, Minus, ChevronDown, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search, Trash2 } from 'lucide-react'
+import { X, Plus, Minus, Send, GripVertical, CalendarIcon, Check, Clock, Copy, ExternalLink, Search, Trash2 } from 'lucide-react'
+import CustomSelect from '@/components/ui/custom-select'
 import { format } from 'date-fns'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -104,10 +105,10 @@ function InterviewSetupContent() {
   const [settings, setSettings] = useState({
     defaultTimer: 90,
     duration_minutes: 30,
-    tts: true,
-    speechToText: true,
-    allowRetakes: false,
-    expireAfter7Days: true,
+    voiceProvider: 'elevenlabs-free',
+    transcriptionProvider: 'browser',
+    language: 'en',
+    autoSendEmail: true,
   })
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ success: number; failed: number; failedNames: string[] } | null>(null)
@@ -118,28 +119,37 @@ function InterviewSetupContent() {
 
   // candidate search
   const [candidateSearch, setCandidateSearch] = useState('')
+  // status filter buttons — all active by default
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['pending', 'in_progress']))
 
-  // question bank search and creation
+  // question bank search, filter, and creation
   const [qSearch, setQSearch] = useState('')
+  const [qFilter, setQFilter] = useState<'all' | 'mine'>('all')
   const [showCreateQ, setShowCreateQ] = useState(false)
   const [newQText, setNewQText] = useState('')
   const [newQCategory, setNewQCategory] = useState('')
+  const [saveToBank, setSaveToBank] = useState(true)
   const [creatingQ, setCreatingQ] = useState(false)
 
   const dragItem = useRef<number | null>(null)
   const dragOverItem = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
-  // -- edit mode: pre-fill interview data when ?edit=interviewId is in the URL --
+  // -- URL params: ?edit=interviewId for editing, ?candidate=id to pre-select --
   const searchParams = useSearchParams()
   const router = useRouter()
   const editId = searchParams.get('edit')
+  const preSelectCandidateId = searchParams.get('candidate')
   const isEditMode = !!editId
   const [editInterview, setEditInterview] = useState<Interview | null>(null)
   const [saving, setSaving] = useState(false)
   const { questions: editQuestions, isLoading: editQLoading } = useInterviewQuestions(editId)
   const originalIQsRef = useRef<InterviewQuestion[]>([])
   const editInitRef = useRef(false)
+  // track original schedule so we can auto-enable email when time changes
+  const originalScheduleRef = useRef<string | null>(null)
+  // true once the user manually clicks the email toggle in edit mode
+  const emailManualRef = useRef(false)
 
   // find candidate and job for the interview being edited
   const editCandidate = isEditMode && editInterview
@@ -158,7 +168,13 @@ function InterviewSetupContent() {
       // pre-fill date, time, and duration from the existing interview
       const d = new Date(iv.scheduled_at)
       setSelectedDate(d)
-      setSelectedTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+      const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      setSelectedTime(time)
+      // store original schedule for change detection
+      originalScheduleRef.current = `${d.toDateString()}|${time}`
+      // editing doesn't send email by default
+      setSettings((s) => ({ ...s, autoSendEmail: false }))
+      emailManualRef.current = false
     }).catch((err) => console.error('[edit] failed to load interview', err))
   }, [editId])
 
@@ -174,13 +190,37 @@ function InterviewSetupContent() {
     })))
   }, [editId, editQLoading, editQuestions])
 
+  // auto-enable email notification when schedule changes in edit mode
+  useEffect(() => {
+    if (!isEditMode || !originalScheduleRef.current || emailManualRef.current) return
+    const currentSchedule = `${selectedDate?.toDateString()}|${selectedTime}`
+    const changed = currentSchedule !== originalScheduleRef.current
+    setSettings((s) => ({ ...s, autoSendEmail: changed }))
+  }, [isEditMode, selectedDate, selectedTime])
+
+  // auto-select candidate when navigating with ?candidate=id (e.g. from applicants page)
+  const preSelectInitRef = useRef(false)
+  useEffect(() => {
+    if (!preSelectCandidateId || isEditMode || preSelectInitRef.current) return
+    if (candidates.length === 0) return
+    const match = candidates.find((c) => c.id === preSelectCandidateId)
+    if (match && match.status !== 'in_progress') {
+      preSelectInitRef.current = true
+      setCheckedCandidates(new Set([preSelectCandidateId]))
+      // auto-set the job filter to match this candidate's job
+      if (match.job_id) setSelectedJob(match.job_id)
+    }
+  }, [preSelectCandidateId, isEditMode, candidates])
+
   const selectedJob_obj = useMemo(() => jobs.find((j) => j.id === selectedJob), [jobs, selectedJob])
 
-  // group questions by category, filtered by search term
+  // group questions by category, filtered by search term and ownership toggle
   const grouped = useMemo(() => {
     const map: Record<string, Question[]> = {}
     const term = qSearch.toLowerCase()
     for (const q of questions) {
+      // "mine" filter: only show company-created questions
+      if (qFilter === 'mine' && !q.company_id) continue
       // skip questions that don't match the search
       if (term && !q.question.toLowerCase().includes(term) && !q.category.toLowerCase().includes(term)) continue
       const cat = q.category || 'GENERAL'
@@ -188,25 +228,32 @@ function InterviewSetupContent() {
       map[cat].push(q)
     }
     return map
-  }, [questions, qSearch])
+  }, [questions, qSearch, qFilter])
 
   // existing categories for the dropdown when creating a new question
   const existingCategories = useMemo(() => {
     return Array.from(new Set(questions.map((q) => q.category).filter(Boolean)))
   }, [questions])
 
-  // create a new question and add it to the bank
+  // create a new question, optionally as temporary (one-time use)
   const handleCreateQuestion = async () => {
     if (!newQText.trim() || !newQCategory.trim() || creatingQ) return
     setCreatingQ(true)
     try {
-      await apiInstance.post('/questions', {
+      const payload: Record<string, unknown> = {
         question: newQText.trim(),
         category: newQCategory.trim(),
-      })
+      }
+      // temporary questions won't persist in the bank after use
+      if (!saveToBank) payload.is_temporary = true
+
+      const { data: created } = await apiInstance.post('/questions', payload)
+      // auto-add the new question to the interview so the user doesn't have to find it
+      setSelected((prev) => [...prev, { question: created as Question, timer: settings.defaultTimer }])
       mutateQuestions()
       setNewQText('')
       setNewQCategory('')
+      setSaveToBank(true)
       setShowCreateQ(false)
     } catch (err) {
       console.error('[questions] create failed', err)
@@ -227,28 +274,48 @@ function InterviewSetupContent() {
     }
   }
 
-  // filter candidates by search term and exclude in-progress
+  // filter candidates by search term, job filter, and status filter buttons
   const filteredCandidates = useMemo(() => {
     const term = candidateSearch.toLowerCase()
     return candidates.filter((c) => {
+      if (!statusFilters.has(c.status)) return false
       if (term) {
         const name = `${c.first_name} ${c.last_name}`.toLowerCase()
-        if (!name.includes(term) && !c.email.toLowerCase().includes(term)) return false
+        const jobTitle = jobs.find((j) => j.id === c.job_id)?.title?.toLowerCase() ?? ''
+        if (!name.includes(term) && !c.email.toLowerCase().includes(term) && !jobTitle.includes(term)) return false
       }
       return true
     })
-  }, [candidates, candidateSearch])
+  }, [candidates, candidateSearch, statusFilters, jobs])
 
-  const eligibleCandidates = filteredCandidates.filter((c) => c.status !== 'in_progress')
-  const visibleChecked = eligibleCandidates.filter((c) => checkedCandidates.has(c.id)).length
-  const allChecked = eligibleCandidates.length > 0 && visibleChecked === eligibleCandidates.length
+  // only non-active candidates can be selected for new interviews
+  const selectableCandidates = filteredCandidates.filter((c) => c.status !== 'in_progress')
+
+  // toggle a single status filter, recalculate "all" automatically
+  const allStatuses = ['pending', 'in_progress', 'completed', 'dismissed', 'hired']
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilters((prev) => {
+      const next = new Set(prev)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next
+    })
+  }
+  const toggleAllStatuses = () => {
+    if (statusFilters.size === allStatuses.length) setStatusFilters(new Set())
+    else setStatusFilters(new Set(allStatuses))
+  }
+  // count selected among selectable (non-active) candidates only
+  const visibleChecked = selectableCandidates.filter((c) => checkedCandidates.has(c.id)).length
+  const allChecked = selectableCandidates.length > 0 && visibleChecked === selectableCandidates.length
   const someChecked = visibleChecked > 0 && !allChecked
 
   const toggleAll = () => {
     if (allChecked) {
       setCheckedCandidates(new Set())
     } else {
-      setCheckedCandidates(new Set(eligibleCandidates.map((c) => c.id)))
+      // only select non-active candidates
+      setCheckedCandidates(new Set(selectableCandidates.map((c) => c.id)))
     }
   }
 
@@ -344,6 +411,7 @@ function InterviewSetupContent() {
             duration_minutes: estimatedMinutes,
             job_title: jobs.find((j) => j.id === candidate.job_id)?.title,
             company_name: company?.name,
+            send_email: settings.autoSendEmail,
           })
           .then((r) => r.data)
 
@@ -415,6 +483,12 @@ function InterviewSetupContent() {
           }
         }
       }
+      // resend invitation email with updated schedule if toggle is on
+      if (settings.autoSendEmail) {
+        await apiInstance.post(`/interviews/${editId}/resend`).catch((err) =>
+          console.error('[edit] resend email failed', err)
+        )
+      }
       // navigate back with the interview pre-selected so the detail panel opens
       router.push(`/dashboard/interviews?selected=${editId}`)
     } catch (err) {
@@ -457,28 +531,15 @@ function InterviewSetupContent() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          {!isEditMode && (
-            <div className="relative">
-              <select
-                value={selectedJob}
-                onChange={(e) => { setSelectedJob(e.target.value); setCheckedCandidates(new Set()) }}
-                className="appearance-none bg-[#0D1117] border border-white/10 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 cursor-pointer"
-              >
-                <option value={ALL}>All Jobs</option>
-                {jobs.map((j) => (
-                  <option key={j.id} value={j.id}>{j.title}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-            </div>
-          )}
           <button
             onClick={isEditMode ? handleSaveEdit : handleSendLinks}
             disabled={!canSend}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-[#4ade80] text-[#0A0D12] font-semibold hover:bg-[#22c55e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
-            {isEditMode ? (saving ? 'Saving...' : 'Save Changes') : 'Send Interview Links'}
+            {isEditMode
+              ? (saving ? 'Saving...' : settings.autoSendEmail ? 'Save & Send Email' : 'Save Changes')
+              : settings.autoSendEmail ? 'Create & Send Links' : 'Create Interview'}
             {!isEditMode && visibleChecked > 0 && (
               <span className="bg-[#0A0D12]/20 px-1.5 py-0.5 rounded-md text-xs font-bold">{visibleChecked}</span>
             )}
@@ -592,9 +653,8 @@ function InterviewSetupContent() {
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-sm font-semibold">
                 Candidates
-                {/* total / eligible count */}
                 <span className="text-[10px] text-gray-500 font-normal ml-1.5">
-                  {eligibleCandidates.length}/{candidates.length}
+                  {filteredCandidates.length}
                 </span>
               </span>
               <div className="flex items-center gap-2">
@@ -615,20 +675,53 @@ function InterviewSetupContent() {
                 </button>
               </div>
             </div>
-            {/* search candidates by name or email */}
+            {/* job filter dropdown */}
+            {!isEditMode && (
+              <div className="mb-2">
+                <CustomSelect
+                  value={selectedJob}
+                  onChange={(v) => { setSelectedJob(v); setCheckedCandidates(new Set()) }}
+                  options={[{ value: ALL, label: 'All Jobs' }, ...jobs.map((j) => ({ value: j.id, label: j.title }))]}
+                  size="sm"
+                />
+              </div>
+            )}
+            {/* search candidates by name, email, or job */}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
               <input
                 type="text"
-                placeholder="Search candidates..."
+                placeholder="Search name, email, job..."
                 value={candidateSearch}
                 onChange={(e) => setCandidateSearch(e.target.value)}
                 className="w-full bg-[#0A0D12] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors"
               />
             </div>
+            {/* status filter buttons */}
+            <div className="flex gap-1 mt-2">
+              {([
+                { key: 'all',         label: 'All',    on: 'bg-white/15 border-white/30 text-white',              off: 'bg-transparent border-white/5 text-gray-600' },
+                { key: 'pending',     label: 'New',    on: 'bg-gray-400/15 border-gray-400/30 text-gray-400',     off: 'bg-transparent border-white/5 text-gray-600' },
+                { key: 'in_progress', label: 'Active', on: 'bg-amber-400/15 border-amber-400/30 text-amber-400',  off: 'bg-transparent border-white/5 text-gray-600' },
+                { key: 'completed',   label: 'Done',   on: 'bg-[#4ade80]/15 border-[#4ade80]/30 text-[#4ade80]', off: 'bg-transparent border-white/5 text-gray-600' },
+              ] as const).map(({ key, label, on, off }) => {
+                const isOn = key === 'all'
+                  ? statusFilters.size === allStatuses.length
+                  : statusFilters.has(key)
+                return (
+                  <button
+                    key={key}
+                    onClick={() => key === 'all' ? toggleAllStatuses() : toggleStatusFilter(key)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-colors ${isOn ? on : off}`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[calc(100vh-340px)] min-h-[320px] py-1">
+          <div className="overflow-y-auto max-h-[calc(100vh-380px)] min-h-[320px] py-1">
             {filteredCandidates.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-gray-600 text-xs text-center px-4">
                 {candidates.length === 0
@@ -668,17 +761,24 @@ function InterviewSetupContent() {
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-white truncate leading-tight">
-                        {c.first_name} {c.last_name}
-                      </p>
-                      {isActive ? (
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block bg-amber-400/10 text-amber-400">
-                          Interview Active
-                        </span>
-                      ) : job && (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block ${chip.bg} ${chip.text}`}>
-                          {job.title.length > 40 ? job.title.slice(0, 40) + '…' : job.title}
-                        </span>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-medium text-white truncate leading-tight">
+                          {c.first_name} {c.last_name}
+                        </p>
+                        {/* status badge — right-aligned */}
+                        {c.status === 'pending' && (
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-400/10 text-gray-400 shrink-0">New</span>
+                        )}
+                        {c.status === 'in_progress' && (
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-400/10 text-amber-400 shrink-0">Active</span>
+                        )}
+                        {c.status === 'completed' && (
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#4ade80]/10 text-[#4ade80] shrink-0">Done</span>
+                        )}
+                      </div>
+                      {/* job title — always shown below name */}
+                      {job && (
+                        <p className="text-[9px] text-gray-500 truncate mt-0.5">{job.title}</p>
                       )}
                     </div>
                   </div>
@@ -689,8 +789,9 @@ function InterviewSetupContent() {
         </div>
         )}
 
-        {/* Column 2 — Interview Questions */}
-        <div className="flex-1 bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
+        {/* Column 2 — Interview Questions + Settings */}
+        <div className="flex-1 flex flex-col gap-4">
+        <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col flex-1">
           <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">Interview Questions</h3>
@@ -771,9 +872,9 @@ function InterviewSetupContent() {
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[calc(100vh-360px)] min-h-[280px] p-4">
+          <div className="overflow-y-auto flex-1 min-h-[120px] p-4">
             {selected.length === 0 ? (
-              <div className="flex items-center justify-center h-48 text-gray-600 text-sm">
+              <div className="flex items-center justify-center h-32 text-gray-600 text-sm">
                 Add questions from the Question Bank →
               </div>
             ) : (
@@ -836,13 +937,143 @@ function InterviewSetupContent() {
               </div>
             )}
           </div>
+
+          </div>
+
+          {/* Interview Settings — separate block below questions */}
+          <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-5">
+            <h3 className="font-semibold text-sm mb-4">Interview Settings</h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">DEFAULT ANSWER TIME</p>
+                <CustomSelect
+                  value={String(settings.defaultTimer)}
+                  onChange={(v) => setSettings((s) => ({ ...s, defaultTimer: Number(v) }))}
+                  options={[
+                    { value: '30', label: '30 seconds' },
+                    { value: '60', label: '60 seconds' },
+                    { value: '90', label: '90 seconds' },
+                    { value: '120', label: '120 seconds' },
+                    { value: '180', label: '180 seconds' },
+                  ]}
+                />
+              </div>
+
+              {/* auto-send email toggle */}
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-white">Auto-send invitation email</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {isEditMode ? 'Resend updated interview details to candidate' : 'Email interview link & PIN to candidates on create'}
+                  </p>
+                </div>
+                <Toggle value={settings.autoSendEmail} onChange={(v) => {
+                  if (isEditMode) emailManualRef.current = true
+                  setSettings((s) => ({ ...s, autoSendEmail: v }))
+                }} />
+              </div>
+
+              {/* AI voice provider selector */}
+              <div>
+                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">VOICE ENGINE</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'elevenlabs-free', label: 'ElevenLabs Free', enabled: true },
+                    { value: 'openai-tts', label: 'OpenAI TTS', enabled: false },
+                    { value: 'google-tts', label: 'Google Cloud', enabled: false },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => opt.enabled && setSettings((s) => ({ ...s, voiceProvider: opt.value }))}
+                      disabled={!opt.enabled}
+                      className={`relative px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        settings.voiceProvider === opt.value
+                          ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
+                          : opt.enabled
+                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {opt.label}
+                      {!opt.enabled && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-500/10 text-[9px] font-bold text-violet-400/70 tracking-wide">SOON</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-600 mt-1.5">Questions are read aloud to candidates</p>
+              </div>
+
+              {/* AI transcription provider selector */}
+              <div>
+                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">TRANSCRIPTION</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'browser', label: 'Browser API', enabled: true },
+                    { value: 'whisper', label: 'Whisper (OpenAI)', enabled: false },
+                    { value: 'deepgram', label: 'Deepgram', enabled: false },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => opt.enabled && setSettings((s) => ({ ...s, transcriptionProvider: opt.value }))}
+                      disabled={!opt.enabled}
+                      className={`relative px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        settings.transcriptionProvider === opt.value
+                          ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
+                          : opt.enabled
+                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {opt.label}
+                      {!opt.enabled && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-500/10 text-[9px] font-bold text-violet-400/70 tracking-wide">SOON</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-600 mt-1.5">Candidate answers transcribed automatically</p>
+              </div>
+
+              {/* interview language selector */}
+              <div>
+                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">INTERVIEW LANGUAGE</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'en', label: 'English', enabled: true },
+                    { value: 'tr', label: 'Türkçe', enabled: false },
+                    { value: 'de', label: 'Deutsch', enabled: false },
+                    { value: 'fr', label: 'Français', enabled: false },
+                    { value: 'es', label: 'Español', enabled: false },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => opt.enabled && setSettings((s) => ({ ...s, language: opt.value }))}
+                      disabled={!opt.enabled}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        settings.language === opt.value
+                          ? 'bg-[#4ade80]/10 border-[#4ade80]/30 text-[#4ade80]'
+                          : opt.enabled
+                            ? 'bg-white/5 border-white/10 text-gray-300 hover:border-white/20'
+                            : 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {opt.label}
+                      {!opt.enabled && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-500/10 text-[9px] font-bold text-violet-400/70 tracking-wide">SOON</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-600 mt-1.5">TTS and transcription language for the interview</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Column 3 — Question Bank + Settings */}
-        <div className="w-72 shrink-0 flex flex-col gap-4">
-
-          {/* Question Bank */}
-          <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col">
+        {/* Column 3 — Question Bank */}
+        <div className="w-72 shrink-0 flex flex-col">
+          <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex flex-col h-[calc(100vh-180px)]">
             <div className="px-5 py-3.5 border-b border-white/5 shrink-0">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm">Question Bank</h3>
@@ -853,6 +1084,23 @@ function InterviewSetupContent() {
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
+              </div>
+
+              {/* ownership filter tabs */}
+              <div className="flex gap-1 mb-2">
+                {(['all', 'mine'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setQFilter(tab)}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${
+                      qFilter === tab
+                        ? 'bg-white/10 text-white'
+                        : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {tab === 'all' ? 'All' : 'Yours'}
+                  </button>
+                ))}
               </div>
 
               {/* search input */}
@@ -893,6 +1141,19 @@ function InterviewSetupContent() {
                       ))}
                     </datalist>
                   </div>
+                  {/* save-to-bank toggle: unchecked = one-time question */}
+                  <label className="flex items-start gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={saveToBank}
+                      onChange={(e) => setSaveToBank(e.target.checked)}
+                      className="mt-0.5 accent-[#4ade80]"
+                    />
+                    <span className="flex flex-col">
+                      <span className="text-xs text-gray-300">Save to question bank</span>
+                      <span className="text-[10px] text-gray-600">Uncheck for one-time use</span>
+                    </span>
+                  </label>
                   <div className="flex gap-2">
                     <button
                       onClick={handleCreateQuestion}
@@ -902,7 +1163,7 @@ function InterviewSetupContent() {
                       {creatingQ ? 'Adding...' : 'Add'}
                     </button>
                     <button
-                      onClick={() => { setShowCreateQ(false); setNewQText(''); setNewQCategory('') }}
+                      onClick={() => { setShowCreateQ(false); setNewQText(''); setNewQCategory(''); setSaveToBank(true) }}
                       className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
                     >
                       Cancel
@@ -911,7 +1172,7 @@ function InterviewSetupContent() {
                 </div>
               )}
             </div>
-            <div className="overflow-y-auto max-h-[320px] p-4">
+            <div className="overflow-y-auto flex-1 p-4">
               {qLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -960,13 +1221,15 @@ function InterviewSetupContent() {
                               >
                                 <p className="text-xs text-gray-300 leading-snug">{q.question}</p>
                                 <div className="flex items-center gap-0.5 shrink-0">
-                                  {/* delete question from bank */}
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id) }}
-                                    className="w-5 h-5 rounded-full text-gray-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors opacity-0 group-hover/q:opacity-100"
-                                  >
-                                    <Trash2 className="w-2.5 h-2.5" />
-                                  </button>
+                                  {/* only company-owned questions can be deleted */}
+                                  {q.company_id && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id) }}
+                                      className="w-5 h-5 rounded-full text-gray-600 hover:text-red-400 hover:bg-red-400/10 flex items-center justify-center transition-colors opacity-0 group-hover/q:opacity-100"
+                                    >
+                                      <Trash2 className="w-2.5 h-2.5" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={(e) => { e.stopPropagation(); addQuestion(q) }}
                                     disabled={isAdded}
@@ -984,45 +1247,6 @@ function InterviewSetupContent() {
                   })}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Interview Settings */}
-          <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-5">
-            <h3 className="font-semibold text-sm mb-4">Interview Settings</h3>
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-[10px] text-gray-500 tracking-widest font-semibold mb-2">DEFAULT ANSWER TIME</p>
-                <div className="relative">
-                  <select
-                    value={settings.defaultTimer}
-                    onChange={(e) => setSettings((s) => ({ ...s, defaultTimer: Number(e.target.value) }))}
-                    className="w-full appearance-none bg-[#0A0D12] border border-white/10 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/20 cursor-pointer"
-                  >
-                    <option value={30}>30 seconds</option>
-                    <option value={60}>60 seconds</option>
-                    <option value={90}>90 seconds</option>
-                    <option value={120}>120 seconds</option>
-                    <option value={180}>180 seconds</option>
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-                </div>
-              </div>
-
-              {[
-                { key: 'tts' as const, label: 'ElevenLabs Voice (TTS)', sub: 'Questions are read aloud to candidate' },
-                { key: 'speechToText' as const, label: 'Speech-to-Text Recording', sub: 'Candidate answers transcribed automatically' },
-                { key: 'allowRetakes' as const, label: 'Allow retakes', sub: 'Candidate can redo a question once' },
-                { key: 'expireAfter7Days' as const, label: 'Expire link after 7 days', sub: 'Invite link becomes invalid after deadline' },
-              ].map(({ key, label, sub }) => (
-                <div key={key} className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-white">{label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
-                  </div>
-                  <Toggle value={settings[key]} onChange={(v) => setSettings((s) => ({ ...s, [key]: v }))} />
-                </div>
-              ))}
             </div>
           </div>
 

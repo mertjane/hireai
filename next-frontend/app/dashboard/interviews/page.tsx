@@ -2,7 +2,10 @@
 
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ChevronDown, ChevronUp, Copy, Check, XCircle, ExternalLink, Search, Star, Download } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronDown, ChevronUp, Copy, Check, XCircle, ExternalLink, Search, Star, Download, Trash2, X, CalendarPlus, ClipboardList } from 'lucide-react'
+import CustomSelect from '@/components/ui/custom-select'
+import ScoreRing from '@/components/ui/score-ring'
 import { useJobs } from '@/hooks/use-jobs'
 import { useAuth } from '@/hooks/use-auth'
 import { useInterviews } from '@/hooks/use-interviews'
@@ -34,26 +37,7 @@ const STATUS_STYLES: Record<InterviewStatus, { dot: string; text: string; label:
   no_show:    { dot: 'bg-red-400',    text: 'text-red-400',    label: 'NO SHOW' },
 }
 
-// score ring used for completed interviews
-function ScoreRing({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
-  const r = size === 'sm' ? 10 : 14
-  const dim = size === 'sm' ? 24 : 36
-  const circ = 2 * Math.PI * r
-  const offset = circ - (Math.min(score, 100) / 100) * circ
-  const color = score >= 70 ? '#4ade80' : score >= 50 ? '#facc15' : '#f87171'
-  return (
-    <div className="relative shrink-0" style={{ width: dim, height: dim }}>
-      <svg viewBox={`0 0 ${dim} ${dim}`} className="w-full h-full -rotate-90">
-        <circle cx={dim / 2} cy={dim / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={size === 'sm' ? 2 : 3} />
-        <circle cx={dim / 2} cy={dim / 2} r={r} fill="none" stroke={color} strokeWidth={size === 'sm' ? 2 : 3}
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
-      </svg>
-      <span className={`absolute inset-0 flex items-center justify-center font-bold text-white ${size === 'sm' ? 'text-[8px]' : 'text-[10px]'}`}>
-        {score}
-      </span>
-    </div>
-  )
-}
+// ScoreRing imported from shared component
 
 function StatCard({ value, label, color, active, onClick }: { value: string | number; label: string; color?: string; active?: boolean; onClick?: () => void }) {
   return (
@@ -80,7 +64,17 @@ function SortIcon({ dir, size = 'sm' }: { dir: 'asc' | 'desc' | 'none'; size?: '
   )
 }
 
+// preset score ranges for the filter dropdown
+const SCORE_FILTERS = [
+  { value: 'all', label: 'All Scores', shortLabel: 'All Scores' },
+  { value: '70+', label: '70+ (Strong)', shortLabel: '70+' },
+  { value: '50-69', label: '50–69 (Average)', shortLabel: '50–69' },
+  { value: '1-49', label: 'Under 50 (Weak)', shortLabel: '<50' },
+  { value: 'unscored', label: 'Not Scored', shortLabel: 'Unscored' },
+]
+
 function InterviewsContent() {
+  const router = useRouter()
   const { company } = useAuth()
   const { jobs } = useJobs(company?.id ?? null)
   const { interviews, isLoading, mutate } = useInterviews()
@@ -88,6 +82,7 @@ function InterviewsContent() {
 
   const [statusTab, setStatusTab] = useState<typeof ALL | InterviewStatus>(ALL)
   const [jobFilter, setJobFilter] = useState(ALL)
+  const [scoreFilter, setScoreFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
@@ -95,6 +90,12 @@ function InterviewsContent() {
   const [detailInterview, setDetailInterview] = useState<Interview | null>(null)
   const [sortNewest, setSortNewest] = useState(true)
   const [sortByScore, setSortByScore] = useState<'none' | 'desc' | 'asc'>('none')
+  // bulk selection state — entering selection mode when any checkbox is clicked
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const isSelecting = selectedIds.size > 0
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [bulkCancelling, setBulkCancelling] = useState(false)
+  const [confirmBulkAction, setConfirmBulkAction] = useState<'delete' | 'cancel' | null>(null)
 
   // derive date sort direction for the icon indicator
   const dateSortDir: 'asc' | 'desc' | 'none' = sortByScore !== 'none' ? 'none' : (sortNewest ? 'desc' : 'asc')
@@ -121,11 +122,19 @@ function InterviewsContent() {
     return m
   }, [jobs])
 
-  // filter and sort interviews by active tab, job, search, and date order
+  // filter and sort interviews by active tab, job, score range, search, and date order
   const filtered = useMemo(() => {
     const list = interviews.filter((iv) => {
       if (statusTab !== ALL && iv.status !== statusTab) return false
       if (jobFilter !== ALL && iv.job_id !== jobFilter) return false
+      // score range filter
+      if (scoreFilter !== 'all') {
+        const s = iv.final_score
+        if (scoreFilter === '70+' && s < 70) return false
+        if (scoreFilter === '50-69' && (s < 50 || s > 69)) return false
+        if (scoreFilter === '1-49' && (s < 1 || s > 49)) return false
+        if (scoreFilter === 'unscored' && s > 0) return false
+      }
       if (search) {
         const c = candidateMap[iv.candidate_id]
         const name = c ? `${c.first_name} ${c.last_name}`.toLowerCase() : ''
@@ -143,7 +152,7 @@ function InterviewsContent() {
       })
     }
     return list
-  }, [interviews, statusTab, jobFilter, search, candidateMap, sortNewest, sortByScore])
+  }, [interviews, statusTab, jobFilter, scoreFilter, search, candidateMap, sortNewest, sortByScore])
 
   // stats computed from all interviews (not filtered)
   const stats = useMemo(() => {
@@ -185,7 +194,7 @@ function InterviewsContent() {
     if (cancellingId) return
     setCancellingId(id)
     try {
-      await apiInstance.delete(`/interviews/${id}`)
+      await apiInstance.put(`/interviews/${id}/cancel`)
       mutate()
     } catch {
       // silently fail — user will see the status unchanged
@@ -193,6 +202,18 @@ function InterviewsContent() {
       setCancellingId(null)
     }
   }, [cancellingId, mutate])
+
+  // permanently delete an interview and its questions
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await apiInstance.delete(`/interviews/${id}`)
+      // close detail panel since this interview no longer exists
+      setDetailInterview(null)
+      mutate()
+    } catch {
+      // silently fail
+    }
+  }, [mutate])
 
   // export filtered interviews as a CSV file
   const handleExportCSV = useCallback(() => {
@@ -217,6 +238,89 @@ function InterviewsContent() {
     URL.revokeObjectURL(url)
   }, [filtered, candidateMap, jobMap])
 
+  // toggle a single interview's selection state
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  // select/deselect all visible interviews
+  const toggleSelectAll = useCallback(() => {
+    const allIds = filtered.map((iv) => iv.id)
+    const allSelected = allIds.every((id) => selectedIds.has(id))
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(allIds))
+    }
+  }, [filtered, selectedIds])
+
+  // clear selection and exit selection mode
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
+
+  // bulk cancel — cancel all selected scheduled interviews
+  const handleBulkCancel = useCallback(async () => {
+    setBulkCancelling(true)
+    const ids = [...selectedIds].filter((id) => {
+      const iv = interviews.find((i) => i.id === id)
+      return iv?.status === 'scheduled'
+    })
+    try {
+      await Promise.all(ids.map((id) => apiInstance.put(`/interviews/${id}/cancel`)))
+      mutate()
+      clearSelection()
+    } catch { /* silently fail */ }
+    finally { setBulkCancelling(false) }
+  }, [selectedIds, interviews, mutate, clearSelection])
+
+  // bulk delete — delete all selected interviews
+  const handleBulkDelete = useCallback(async () => {
+    setBulkDeleting(true)
+    try {
+      await Promise.all([...selectedIds].map((id) => apiInstance.delete(`/interviews/${id}`)))
+      setDetailInterview(null)
+      mutate()
+      clearSelection()
+    } catch { /* silently fail */ }
+    finally { setBulkDeleting(false) }
+  }, [selectedIds, mutate, clearSelection])
+
+  // export only selected interviews as CSV
+  const handleExportSelected = useCallback(() => {
+    const selected = filtered.filter((iv) => selectedIds.has(iv.id))
+    const header = 'Candidate,Email,Position,Scheduled,Duration (min),Score,Status'
+    const rows = selected.map((iv) => {
+      const c = candidateMap[iv.candidate_id]
+      const j = jobMap[iv.job_id]
+      const name = c ? `${c.first_name} ${c.last_name}` : 'Unknown'
+      const email = c?.email ?? ''
+      const position = j?.title ?? ''
+      const date = new Date(iv.scheduled_at).toLocaleDateString()
+      const score = iv.final_score > 0 ? iv.final_score : iv.status === 'completed' ? 'Not scored' : ''
+      return `"${name}","${email}","${position}","${date}",${iv.duration_minutes},"${score}","${iv.status}"`
+    })
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'interviews-selected.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [filtered, selectedIds, candidateMap, jobMap])
+
+  // count how many selected interviews are cancellable
+  const selectedCancellable = useMemo(() => {
+    return [...selectedIds].filter((id) => {
+      const iv = interviews.find((i) => i.id === id)
+      return iv?.status === 'scheduled'
+    }).length
+  }, [selectedIds, interviews])
+
   // true when a detail panel is visible on the right
   const isSplit = detailInterview !== null
 
@@ -229,29 +333,29 @@ function InterviewsContent() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="text"
-            placeholder="Search candidates..."
+            placeholder={isSplit ? 'Search...' : 'Search candidates...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-[#0D1117] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/15 transition-colors"
           />
         </div>
-        <div className="relative shrink-0">
-          <select
-            value={jobFilter}
-            onChange={(e) => setJobFilter(e.target.value)}
-            className="appearance-none bg-[#0D1117] border border-white/5 rounded-xl px-4 pr-8 py-2.5 text-sm text-gray-300 outline-none focus:border-white/15 cursor-pointer"
-          >
-            <option value={ALL}>All Jobs</option>
-            {jobs.map((j) => (
-              <option key={j.id} value={j.id}>{j.title}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
-        </div>
+        <CustomSelect
+          value={jobFilter}
+          onChange={setJobFilter}
+          options={[{ value: ALL, label: 'All Jobs' }, ...jobs.map((j) => ({ value: j.id, label: j.title }))]}
+          className="w-44 shrink-0"
+        />
+        <CustomSelect
+          value={scoreFilter}
+          onChange={setScoreFilter}
+          options={SCORE_FILTERS}
+          className={`${isSplit ? 'w-32' : 'w-44'} shrink-0`}
+          dropdownFit
+        />
       </div>
 
-      {/* status tabs */}
-      <div className="flex gap-1 bg-[#0D1117] border border-white/5 rounded-xl p-1 w-fit">
+      {/* status tabs — wrap when space is tight in split mode */}
+      <div className="flex flex-wrap gap-1 bg-[#0D1117] border border-white/5 rounded-xl p-1">
         {TABS.map((tab) => {
           const active = statusTab === tab.key
           const count = tabCounts[tab.key]
@@ -259,13 +363,13 @@ function InterviewsContent() {
             <button
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                 active ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
               {tab.label}
               {count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                <span className={`text-[10px] px-1 py-0.5 rounded-full ${
                   active ? 'bg-white/10 text-gray-300' : 'bg-white/5 text-gray-600'
                 }`}>
                   {count}
@@ -278,16 +382,18 @@ function InterviewsContent() {
     </>
   )
 
-  // compact row for split mode — just avatar, name, score/status
+  // compact row for split mode — checkbox + avatar, name, job, score/status
   const renderCompactRow = (iv: Interview) => {
     const candidate = candidateMap[iv.candidate_id]
+    const job = jobMap[iv.job_id]
     const fullName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'Unknown'
     const initials = candidate
       ? `${candidate.first_name[0]}${candidate.last_name[0]}`.toUpperCase()
       : '??'
     const color = avatarColor(iv.candidate_id)
     const st = STATUS_STYLES[iv.status]
-    const isSelected = detailInterview?.id === iv.id
+    const isActive = detailInterview?.id === iv.id
+    const isChecked = selectedIds.has(iv.id)
     const hasScore = iv.status === 'completed' && iv.final_score > 0
 
     // short date like "4 Mar"
@@ -296,13 +402,31 @@ function InterviewsContent() {
     return (
       <div
         key={iv.id}
-        onClick={() => setDetailInterview(iv)}
-        className={`grid grid-cols-[1fr_52px_44px] gap-x-2 items-center px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
-          isSelected
+        onClick={() => {
+          // in selection mode, row clicks toggle selection
+          if (isSelecting) { toggleSelect(iv.id); return }
+          setDetailInterview(iv)
+        }}
+        className={`grid gap-x-2 items-center px-3 py-2.5 cursor-pointer transition-colors border-l-2 ${
+          isChecked
+            ? 'bg-[#4ade80]/5 border-l-[#4ade80]'
+            : isActive
             ? 'bg-white/[0.04] border-l-[#4ade80]'
             : 'hover:bg-white/[0.02] border-l-transparent'
         }`}
+        style={{ gridTemplateColumns: '20px 1fr 52px 44px' }}
       >
+        {/* checkbox */}
+        <div
+          onClick={(e) => { e.stopPropagation(); toggleSelect(iv.id) }}
+          className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+            isChecked
+              ? 'bg-[#4ade80] border-[#4ade80]'
+              : 'border-white/15 hover:border-white/30'
+          }`}
+        >
+          {isChecked && <Check className="w-2.5 h-2.5 text-black" />}
+        </div>
         {/* name + status */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
@@ -310,10 +434,13 @@ function InterviewsContent() {
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium text-white leading-tight truncate">{fullName}</p>
-            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${st.text} mt-0.5`}>
-              <span className={`w-1 h-1 rounded-full ${st.dot}`} />
-              {st.label}
-            </span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${st.text}`}>
+                <span className={`w-1 h-1 rounded-full ${st.dot}`} />
+                {st.label}
+              </span>
+              {job && <span className="text-[9px] text-gray-600 truncate">{job.title}</span>}
+            </div>
           </div>
         </div>
         {/* date */}
@@ -330,7 +457,7 @@ function InterviewsContent() {
     )
   }
 
-  // full table row for non-split mode — all columns
+  // full table row for non-split mode — checkbox + all columns
   const renderFullRow = (iv: Interview) => {
     const candidate = candidateMap[iv.candidate_id]
     const job = jobMap[iv.job_id]
@@ -341,13 +468,33 @@ function InterviewsContent() {
     const color = avatarColor(iv.candidate_id)
     const st = STATUS_STYLES[iv.status]
     const hasScore = iv.status === 'completed' && iv.final_score > 0
+    const isChecked = selectedIds.has(iv.id)
 
     return (
       <div
         key={iv.id}
-        onClick={() => setDetailInterview(iv)}
-        className="group grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] items-center px-5 py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
+        onClick={() => {
+          // in selection mode, row clicks toggle selection
+          if (isSelecting) { toggleSelect(iv.id); return }
+          setDetailInterview(iv)
+        }}
+        className={`group grid items-center px-5 py-4 border-b border-white/5 last:border-0 transition-colors cursor-pointer ${
+          isChecked ? 'bg-[#4ade80]/5' : 'hover:bg-white/[0.02]'
+        }`}
+        style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}
       >
+        {/* checkbox */}
+        <div
+          onClick={(e) => { e.stopPropagation(); toggleSelect(iv.id) }}
+          className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+            isChecked
+              ? 'bg-[#4ade80] border-[#4ade80]'
+              : 'border-white/15 hover:border-white/30'
+          }`}
+        >
+          {isChecked && <Check className="w-3 h-3 text-black" />}
+        </div>
+
         {/* candidate */}
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
@@ -368,13 +515,10 @@ function InterviewsContent() {
         {/* duration */}
         <span className="text-sm text-gray-400">{iv.duration_minutes}m</span>
 
-        {/* score — show ring for scored, label for unscored completed, dash otherwise */}
-        <div className="flex items-center gap-2">
+        {/* score — ring only, no duplicate text */}
+        <div className="flex items-center">
           {hasScore ? (
-            <>
-              <ScoreRing score={iv.final_score} />
-              <span className="text-sm font-medium text-white">{iv.final_score}%</span>
-            </>
+            <ScoreRing score={iv.final_score} />
           ) : iv.status === 'completed' ? (
             <span className="text-[10px] font-semibold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">Not scored</span>
           ) : (
@@ -388,7 +532,6 @@ function InterviewsContent() {
             <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
             {st.label}
           </span>
-          {/* show a star if candidate left feedback */}
           {iv.feedback_rating != null && (
             <span title={`Feedback: ${iv.feedback_rating}/5`}>
               <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -396,8 +539,8 @@ function InterviewsContent() {
           )}
         </div>
 
-        {/* actions — separate fixed column, visible on hover */}
-        <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* actions — visible on hover, hidden in selection mode */}
+        <div className={`flex items-center gap-1 justify-end transition-opacity ${isSelecting ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
           {iv.status === 'scheduled' && !iv.token_revoke && (
             <button
               onClick={(e) => { e.stopPropagation(); handleCopy(iv.id, iv.token) }}
@@ -442,15 +585,55 @@ function InterviewsContent() {
           <h2 className="text-lg font-bold">Interviews</h2>
           <p className="text-gray-500 text-xs mt-0.5">Track and manage all interviews</p>
         </div>
-        {filtered.length > 0 && (
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0D1117] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* bulk action bar — visible when items are selected */}
+          {isSelecting && (
+            <div className="flex items-center gap-2 bg-[#0D1117] border border-[#4ade80]/20 rounded-xl px-3 py-1.5 animate-in fade-in">
+              <span className="text-xs font-semibold text-[#4ade80] mr-1">{selectedIds.size} selected</span>
+              {selectedCancellable > 0 && (
+                <button
+                  onClick={() => setConfirmBulkAction('cancel')}
+                  disabled={bulkCancelling}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-400 bg-amber-400/10 rounded-lg hover:bg-amber-400/20 transition-colors disabled:opacity-40"
+                >
+                  <XCircle className="w-3 h-3" />
+                  Cancel ({selectedCancellable})
+                </button>
+              )}
+              <button
+                onClick={() => setConfirmBulkAction('delete')}
+                disabled={bulkDeleting}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-400 bg-red-400/10 rounded-lg hover:bg-red-400/20 transition-colors disabled:opacity-40"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </button>
+              <button
+                onClick={handleExportSelected}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-300 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                Export
+              </button>
+              <button
+                onClick={clearSelection}
+                className="p-1.5 text-gray-500 hover:text-white transition-colors"
+                title="Clear selection"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          {filtered.length > 0 && !isSelecting && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0D1117] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
       {/* stat cards — always full width */}
@@ -472,10 +655,25 @@ function InterviewsContent() {
 
             {/* compact interview list */}
             <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex-1 overflow-hidden flex flex-col min-h-0">
-              {/* column headers with sort buttons */}
-              <div className="grid grid-cols-[1fr_52px_44px] gap-x-2 items-center px-3 py-2 border-b border-white/5 shrink-0">
+              {/* column headers with checkbox + sort buttons */}
+              <div className="grid gap-x-2 items-center px-3 py-2 border-b border-white/5 shrink-0" style={{ gridTemplateColumns: '20px 1fr 52px 44px' }}>
+                {/* select all checkbox */}
+                <div
+                  onClick={toggleSelectAll}
+                  className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+                    filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id))
+                      ? 'bg-[#4ade80] border-[#4ade80]'
+                      : isSelecting
+                      ? 'border-[#4ade80]/50 bg-[#4ade80]/10'
+                      : 'border-white/15 hover:border-white/30'
+                  }`}
+                >
+                  {filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id)) && (
+                    <Check className="w-2.5 h-2.5 text-black" />
+                  )}
+                </div>
                 <span className="text-[10px] font-semibold text-gray-500 tracking-widest">
-                  {filtered.length} INTERVIEW{filtered.length !== 1 ? 'S' : ''}
+                  {isSelecting ? `${selectedIds.size} SELECTED` : `${filtered.length} INTERVIEW${filtered.length !== 1 ? 'S' : ''}`}
                 </span>
                 <button
                   onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
@@ -500,8 +698,15 @@ function InterviewsContent() {
                     ))}
                   </div>
                 ) : filtered.length === 0 ? (
-                  <div className="flex items-center justify-center h-32 text-gray-600 text-xs">
-                    No interviews found.
+                  <div className="flex flex-col items-center justify-center flex-1 gap-2.5">
+                    <Search className="w-5 h-5 text-gray-600" />
+                    <p className="text-xs text-gray-500">No matches</p>
+                    <button
+                      onClick={() => { setStatusTab(ALL); setJobFilter(ALL); setScoreFilter('all'); setSearch('') }}
+                      className="text-[10px] text-[#4ade80] hover:underline mt-0.5"
+                    >
+                      Clear filters
+                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col py-1">
@@ -520,6 +725,7 @@ function InterviewsContent() {
               candidate={candidateMap[detailInterview.candidate_id]}
               job={jobMap[detailInterview.job_id]}
               onClose={() => setDetailInterview(null)}
+              onDelete={handleDelete}
             />
           </div>
         </div>
@@ -531,7 +737,22 @@ function InterviewsContent() {
           {/* full table */}
           <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
             {/* table header */}
-            <div className="grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] px-5 py-3 border-b border-white/5">
+            <div className="grid px-5 py-3 border-b border-white/5" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
+              {/* select all checkbox */}
+              <div
+                onClick={toggleSelectAll}
+                className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+                  filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id))
+                    ? 'bg-[#4ade80] border-[#4ade80]'
+                    : isSelecting
+                    ? 'border-[#4ade80]/50 bg-[#4ade80]/10'
+                    : 'border-white/15 hover:border-white/30'
+                }`}
+              >
+                {filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id)) && (
+                  <Check className="w-3 h-3 text-black" />
+                )}
+              </div>
               {['CANDIDATE', 'POSITION', 'SCHEDULED', 'DURATION', 'SCORE', 'STATUS', ''].map((h) => (
                 h === 'SCHEDULED' ? (
                   <button
@@ -560,17 +781,45 @@ function InterviewsContent() {
             {isLoading ? (
               <div className="flex flex-col">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-[2fr_1.5fr_1fr_0.5fr_1fr_0.7fr_72px] px-5 py-4 border-b border-white/5 gap-4">
-                    {Array.from({ length: 7 }).map((__, j) => (
+                  <div key={i} className="grid px-5 py-4 border-b border-white/5 gap-4" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
+                    {Array.from({ length: 8 }).map((__, j) => (
                       <div key={j} className="h-4 bg-white/5 rounded animate-pulse" />
                     ))}
                   </div>
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-48 text-gray-600 text-sm">
-                No interviews found.
-              </div>
+              interviews.length === 0 ? (
+                // true empty state — no interviews at all
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center">
+                    <ClipboardList className="w-7 h-7 text-gray-600" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-400">No interviews yet</p>
+                    <p className="text-xs text-gray-600 mt-1">Schedule your first interview to get started</p>
+                  </div>
+                  <button
+                    onClick={() => router.push('/dashboard/interview-setup')}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#4ade80]/10 text-[#4ade80] text-sm font-semibold rounded-xl hover:bg-[#4ade80]/20 transition-colors"
+                  >
+                    <CalendarPlus className="w-4 h-4" />
+                    Schedule Interview
+                  </button>
+                </div>
+              ) : (
+                // filtered results empty — interviews exist but none match filters
+                <div className="flex flex-col items-center justify-center py-24 gap-3">
+                  <Search className="w-6 h-6 text-gray-600" />
+                  <p className="text-sm text-gray-500">No interviews match your filters</p>
+                  <button
+                    onClick={() => { setStatusTab(ALL); setJobFilter(ALL); setScoreFilter('all'); setSearch('') }}
+                    className="text-xs text-[#4ade80] hover:underline mt-1"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )
             ) : (
               <div className="flex flex-col">
                 {filtered.map(renderFullRow)}
@@ -578,6 +827,46 @@ function InterviewsContent() {
             )}
           </div>
         </>
+      )}
+
+      {/* bulk action confirmation modal */}
+      {confirmBulkAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-sm font-bold text-white mb-2">
+              {confirmBulkAction === 'delete' ? 'Delete Selected Interviews?' : 'Cancel Selected Interviews?'}
+            </h3>
+            <p className="text-xs text-gray-400 mb-5">
+              {confirmBulkAction === 'delete'
+                ? `This will permanently delete ${selectedIds.size} interview${selectedIds.size > 1 ? 's' : ''} and all associated data.`
+                : `This will cancel ${selectedCancellable} scheduled interview${selectedCancellable > 1 ? 's' : ''} and revoke their links.`
+              }
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmBulkAction(null)}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Keep
+              </button>
+              <button
+                onClick={async () => {
+                  const action = confirmBulkAction
+                  setConfirmBulkAction(null)
+                  if (action === 'delete') await handleBulkDelete()
+                  else await handleBulkCancel()
+                }}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                  confirmBulkAction === 'delete'
+                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                    : 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20'
+                }`}
+              >
+                {confirmBulkAction === 'delete' ? 'Delete All' : 'Cancel All'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* cancel confirmation modal */}

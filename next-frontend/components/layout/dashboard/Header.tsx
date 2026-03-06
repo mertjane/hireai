@@ -3,15 +3,11 @@
 import { useAuth } from '@/hooks/use-auth'
 import { Search, Bell } from 'lucide-react'
 
-interface HeaderProps {
-  title: string
-}
 
-export default function Header({ title }: HeaderProps) {
+export default function Header() {
   const { company } = useAuth()
   return (
-    <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-6">
-      <h1 className="text-lg font-semibold">{title}</h1>
+    <header className="h-14 shrink-0 border-b border-white/5 flex items-center justify-end px-6">
       <div className="flex items-center gap-3">
         <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
           <Search className="w-4 h-4" />

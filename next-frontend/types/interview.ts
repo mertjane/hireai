@@ -15,6 +15,7 @@ export interface Interview {
   created_at: string
   feedback_rating: number | null
   feedback_comment: string | null
+  ai_comment?: string | null
 }
 
 // a question assigned to an interview, with the candidate's answer

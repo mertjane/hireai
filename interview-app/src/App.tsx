@@ -66,6 +66,8 @@ export default function App() {
   const [micTestPassed, setMicTestPassed] = useSessionState('micTestPassed', false)
   const [currentIndex, setCurrentIndex] = useSessionState('currentQuestionIndex', 0)
   const [welcomeSeen, setWelcomeSeen] = useSessionState('welcomeSeen', false)
+  // tracks whether the candidate just finished the last question (controls feedback form visibility)
+  const [justCompleted, setJustCompleted] = useState(false)
 
   // extract token from URL on first visit, persist in sessionStorage for reloads
   const tokenRef = useRef<string | null>(null)
@@ -284,6 +286,7 @@ export default function App() {
       setScreen('break')
     } else {
       try { await api.completeInterview(token) } catch { /* will retry */ }
+      setJustCompleted(true)
       setScreen('completed')
     }
   }, [questions, currentIndex, token, setCurrentIndex])
@@ -374,7 +377,7 @@ export default function App() {
                 />
               )
             case 'completed':
-              return <CompletedScreen token={token ?? undefined} />
+              return <CompletedScreen token={token ?? undefined} showFeedback={justCompleted} />
           }
         })()}
       </div>

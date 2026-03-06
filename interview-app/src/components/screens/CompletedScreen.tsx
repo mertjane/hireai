@@ -5,9 +5,10 @@ const CONFETTI_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#a855f7']
 
 interface Props {
   token?: string
+  showFeedback?: boolean
 }
 
-export function CompletedScreen({ token }: Props) {
+export function CompletedScreen({ token, showFeedback = false }: Props) {
   const [confetti, setConfetti] = useState<{ id: number; left: string; color: string; delay: string }[]>([])
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
@@ -28,15 +29,6 @@ export function CompletedScreen({ token }: Props) {
     return () => clearTimeout(cleanup)
   }, [])
 
-  // hide the form if feedback was already sent this session
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem('feedbackSubmitted') === 'true') {
-        setFeedbackSubmitted(true)
-      }
-    } catch { /* ignore */ }
-  }, [])
-
   const handleRatingSubmit = async () => {
     if (rating === 0) return
     setSending(true)
@@ -48,7 +40,7 @@ export function CompletedScreen({ token }: Props) {
       } catch { /* endpoint might not exist yet on some deployments */ }
     }
 
-    // mark as submitted for this session so refresh doesn't re-show the form
+    // mark as submitted so refresh won't re-show the form
     try { sessionStorage.setItem('feedbackSubmitted', 'true') } catch { /* ignore */ }
 
     setSending(false)
@@ -76,7 +68,8 @@ export function CompletedScreen({ token }: Props) {
           <p>Thank you for completing your interview. The hiring team will review your responses.</p>
           <p className="mt-2 text-sm text-text-secondary">You may close this tab.</p>
 
-          {/* feedback form */}
+          {/* feedback form — only shown right after completing, not on reload */}
+          {showFeedback && (
           <div className="mt-8 border-t border-secondary/50 pt-6">
             {feedbackSubmitted ? (
               <p className="text-sm text-success">Thanks for your feedback!</p>
@@ -123,6 +116,7 @@ export function CompletedScreen({ token }: Props) {
               </>
             )}
           </div>
+          )}
         </div>
       </section>
     </>
