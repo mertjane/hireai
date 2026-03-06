@@ -67,6 +67,26 @@ export const cancelInterview = async (req, res) => {
     }
 };
 
+// permanently delete an interview and its associated questions
+export const deleteInterview = async (req, res) => {
+    try {
+        const data = await interviewService.deleteInterview(req.params.id, req.company.id);
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+// resend interview invitation email to the candidate
+export const resendInvitation = async (req, res) => {
+    try {
+        const data = await interviewService.resendInvitation(req.params.id, req.company.id);
+        res.status(HTTP_STATUS.OK).json(data);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
 // Public — candidate verifies their PIN before the interview starts
 export const verifyPin = async (req, res) => {
     try {

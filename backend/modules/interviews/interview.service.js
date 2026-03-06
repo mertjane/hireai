@@ -3,7 +3,9 @@ import { createError } from '../../utils/error.util.js';
 import { HTTP_STATUS } from '../../constants/statusCodes.js';
 import * as interviewRepo from './interview.repository.js';
 import * as candidateRepo from '../candidates/candidate.repository.js';
+import * as jobRepo from '../jobs/jobs.repository.js';
 import { sendInterviewInvitation, sendHelpRequest } from '../smtp/smtp.service.js';
+import { scoreInterview } from '../scoring/scoring.service.js';
 
 const assertFound = (interview) => {
     if (!interview) throw createError('Interview not found', HTTP_STATUS.NOT_FOUND);
@@ -17,24 +19,29 @@ const helpRequestCounts = new Map();
 const MAX_HELP_REQUESTS = 3;
 
 export const scheduleInterview = async (company_id, payload) => {
-    const { candidate_id, job_id, scheduled_at, duration_minutes, job_title, company_name } = payload;
+    const { candidate_id, job_id, scheduled_at, duration_minutes, job_title, company_name, send_email = true } = payload;
 
     const token = randomUUID();
     const pin = generatePin();
-    const access_link = `${process.env.APP_URL}/api/v1/interviews/token/${token}`;
+    // use the candidate-facing interview app URL, not the backend API
+    const interviewBase = process.env.INTERVIEW_APP_URL || 'https://interview.borasozer.com';
+    const access_link = `${interviewBase}?token=${token}`;
 
     const interview = await interviewRepo.createInterview({
         candidate_id, job_id, scheduled_at, duration_minutes,
         company_id, token, pin, access_link,
     });
 
-    // Update candidate status + send invitation email (fire-and-forget)
+    // Update candidate status + optionally send invitation email (fire-and-forget)
     candidateRepo.getCandidateById(candidate_id, company_id)
         .then((candidate) => {
             if (!candidate) return;
 
             candidateRepo.updateCandidate(candidate_id, company_id, { status: 'in_progress' })
                 .catch((err) => console.error('[interview] candidate status update failed:', err.message));
+
+            // only send email if explicitly requested
+            if (!send_email) return;
 
             const formattedDate = new Date(scheduled_at).toLocaleDateString('en-US', {
                 year: 'numeric', month: 'long', day: 'numeric',
@@ -66,6 +73,40 @@ export const getInterview = async (id, company_id) => {
     return interview;
 };
 
+// resend the invitation email for a scheduled interview
+export const resendInvitation = async (id, company_id) => {
+    const interview = await interviewRepo.getInterviewById(id, company_id);
+    assertFound(interview);
+
+    if (interview.status !== 'scheduled') {
+        throw createError('Can only resend for scheduled interviews', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const [candidate, job] = await Promise.all([
+        candidateRepo.getCandidateById(interview.candidate_id, company_id),
+        jobRepo.getJobById(interview.job_id, company_id),
+    ]);
+    if (!candidate) throw createError('Candidate not found', HTTP_STATUS.NOT_FOUND);
+
+    const formattedDate = new Date(interview.scheduled_at).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+
+    await sendInterviewInvitation({
+        to: candidate.email,
+        firstName: candidate.first_name,
+        jobTitle: job?.title ?? 'the position',
+        companyName: 'the company',
+        // rebuild link from token so old DB records with wrong URLs still work
+        interviewLink: `${process.env.INTERVIEW_APP_URL || 'https://interview.borasozer.com'}?token=${interview.token}`,
+        scheduledAt: formattedDate,
+        pin: interview.pin,
+    });
+
+    return { success: true };
+};
+
 export const getInterviewByToken = async (token) => {
     const interview = await interviewRepo.getInterviewByToken(token);
     if (!interview) throw createError('Interview not found', HTTP_STATUS.NOT_FOUND);
@@ -94,7 +135,20 @@ export const completeInterview = async (token) => {
     if (!interview) throw createError('Interview not found', HTTP_STATUS.NOT_FOUND);
     if (interview.token_revoke) throw createError('This interview link has been revoked', HTTP_STATUS.UNAUTHORIZED);
 
-    return await interviewRepo.updateInterviewByToken(token, { status: 'completed' });
+    const result = await interviewRepo.updateInterviewByToken(token, { status: 'completed' });
+
+    // mark candidate as completed so they're distinguishable from pending ones
+    if (interview.candidate_id) {
+        candidateRepo.updateCandidate(interview.candidate_id, interview.company_id, { status: 'completed' })
+            .catch((err) => console.error('[interview] candidate status update failed:', err.message));
+    }
+
+    // trigger AI scoring in the background so the candidate isn't blocked
+    scoreInterview(interview.id).catch((err) =>
+        console.error('[interview] auto-scoring failed:', err.message)
+    );
+
+    return result;
 };
 
 // Send a help request email to the company that owns this interview
@@ -138,6 +192,21 @@ export const updateInterview = async (id, company_id, updates) => {
     const interview = await interviewRepo.getInterviewById(id, company_id);
     assertFound(interview);
     return await interviewRepo.updateInterview(id, company_id, updates);
+};
+
+// permanently delete an interview and its questions, reset candidate status
+export const deleteInterview = async (id, company_id) => {
+    const interview = await interviewRepo.getInterviewById(id, company_id);
+    assertFound(interview);
+
+    // reset candidate so they can be re-invited
+    if (interview.candidate_id) {
+        candidateRepo.updateCandidate(interview.candidate_id, company_id, { status: 'pending' })
+            .catch((err) => console.error('[interview] candidate status reset failed:', err.message));
+    }
+
+    await interviewRepo.deleteInterview(id, company_id);
+    return { deleted: true };
 };
 
 export const cancelInterview = async (id, company_id) => {
