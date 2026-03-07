@@ -255,7 +255,7 @@ export const ToggleTheme = ({
         ref={buttonRef}
         onClick={toggleTheme}
         className={cn(
-          "p-2 rounded-full transition-colors duration-300",
+          "p-2 rounded-full transition-colors text-muted-foreground duration-300",
           isDark ? "hover:text-amber-400" : "hover:text-violet-500",
           className,
         )}

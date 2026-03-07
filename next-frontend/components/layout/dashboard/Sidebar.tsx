@@ -12,6 +12,7 @@ import {
   BarChart2,
   Settings,
   LogOut,
+  ChartLine
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useJobs } from "@/hooks/use-jobs";
@@ -27,6 +28,7 @@ export default function Sidebar() {
       section: "MAIN",
       items: [
         { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+        { label: "Analytics", href: "/dashboard/analytics", icon: ChartLine },
         {
           label: "Job Listings",
           href: "/dashboard/jobs",

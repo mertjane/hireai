@@ -4,12 +4,12 @@ import SessionGuard from '@/components/layout/dashboard/SessionGuard'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="h-screen overflow-hidden flex bg-background text-foreground">
       <SessionGuard />
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         <Header />
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>
     </div>
   )

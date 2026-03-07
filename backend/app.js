@@ -9,6 +9,7 @@ import candidatesRoutes from './modules/candidates/candidate.route.js';
 import interviewsRoutes from './modules/interviews/interview.route.js';
 import questionsRoutes from './modules/questions/question.route.js';
 import iQuestionRoutes from './modules/interview-questions/iQuestion.route.js';
+import analyticsRoutes from './modules/analytics/analytics.route.js';
 
 const app = express();
 // Allow Cloudflare Pages + localhost origins for dev and production
@@ -42,5 +43,6 @@ app.use('/api/v1/candidates', candidatesRoutes);
 app.use('/api/v1/interviews', interviewsRoutes);
 app.use('/api/v1/questions', questionsRoutes);
 app.use('/api/v1/interview-questions', iQuestionRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 export default app;

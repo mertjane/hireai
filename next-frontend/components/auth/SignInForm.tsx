@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail } from 'lucide-react'
 import { signIn } from '@/services/api/auth'
 import InputField from './InputField'
 import PasswordField from './PasswordField'
 import GreenButton from './GreenButton'
+
+const LS_KEY = 'hireai_remembered_email'
 
 export default function SignInForm() {
   const router = useRouter()
@@ -15,6 +17,16 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  // On mount: restore remembered email if present
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_KEY)
+    if (saved) {
+      setEmail(saved)
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,10 +34,21 @@ export default function SignInForm() {
     setLoading(true)
     try {
       const { token, refreshToken, profile } = await signIn({ email, password })
+
+      // Persist or clear remembered email based on checkbox
+      if (rememberMe) {
+        localStorage.setItem(LS_KEY, email)
+      } else {
+        localStorage.removeItem(LS_KEY)
+      }
+
+      // Store login timestamp for session info display
+      localStorage.setItem('hireai_login_time', new Date().toISOString())
+
       await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, refreshToken, profile }),
+        body: JSON.stringify({ token, refreshToken, profile, rememberMe }),
       })
       router.push('/dashboard')
     } catch (err: unknown) {
@@ -67,9 +90,11 @@ export default function SignInForm() {
       {error && <p className="text-red-400 text-sm -mt-2">{error}</p>}
 
       <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2 text-gray-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-gray-400 cursor-pointer select-none">
           <input
             type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
             className="w-4 h-4 rounded border-white/20 bg-white/5 accent-[#4ade80]"
           />
           Remember me

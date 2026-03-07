@@ -49,7 +49,7 @@ export default function NotificationsPage() {
   const groups = useMemo(() => groupByTime(buildItems(candidates)), [candidates])
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6 w-full">
       <div>
         <h2 className="text-xl font-bold">Notifications</h2>
         <p className="text-muted-foreground text-sm mt-1">Recent activity across your hiring pipeline.</p>

@@ -324,6 +324,8 @@ function InterviewsContent() {
   // true when a detail panel is visible on the right
   const isSplit = detailInterview !== null
 
+
+
   // shared filter/tabs UI used in both full and split modes
   const filtersUI = (
     <>
@@ -343,7 +345,7 @@ function InterviewsContent() {
           value={jobFilter}
           onChange={setJobFilter}
           options={[{ value: ALL, label: 'All Jobs' }, ...jobs.map((j) => ({ value: j.id, label: j.title }))]}
-          className="w-44 shrink-0"
+          className="flex-1 shrink-0"
         />
         <CustomSelect
           value={scoreFilter}
@@ -355,7 +357,7 @@ function InterviewsContent() {
       </div>
 
       {/* status tabs — wrap when space is tight in split mode */}
-      <div className="flex flex-wrap gap-1 bg-card border border-border rounded-xl p-1">
+      <div className="flex justify-between bg-card border border-border rounded-xl p-1">
         {TABS.map((tab) => {
           const active = statusTab === tab.key
           const count = tabCounts[tab.key]
@@ -363,7 +365,7 @@ function InterviewsContent() {
             <button
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors whitespace-nowrap ${
                 active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -698,12 +700,12 @@ function InterviewsContent() {
                     ))}
                   </div>
                 ) : filtered.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center flex-1 gap-2.5">
+                  <div className="flex h-full flex-col items-center justify-center flex-1 gap-2.5">
                     <Search className="w-5 h-5 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">No matches</p>
                     <button
                       onClick={() => { setStatusTab(ALL); setJobFilter(ALL); setScoreFilter('all'); setSearch('') }}
-                      className="text-[10px] text-[#4ade80] hover:underline mt-0.5"
+                      className="text-[10px] cursor-pointer text-[#4ade80] hover:underline mt-0.5"
                     >
                       Clear filters
                     </button>
