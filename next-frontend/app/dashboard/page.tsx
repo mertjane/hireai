@@ -87,7 +87,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold">{greeting}, {company?.name}</h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Here is what is happening with your hiring pipeline today.
           </p>
         </div>

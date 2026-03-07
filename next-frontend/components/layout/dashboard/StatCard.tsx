@@ -22,7 +22,7 @@ export default function StatCard({
   changeType,
 }: StatCardProps) {
   return (
-    <div className="group flex-1 bg-[#0D1117] rounded-xl border border-white/5 p-5 relative overflow-hidden">
+    <div className="group flex-1 bg-card rounded-xl border border-border p-5 relative overflow-hidden">
       {/* Top color bar */}
       <div className={`absolute top-0 left-0 right-0 h-0.5 ${borderColor}`} />
 
@@ -31,7 +31,7 @@ export default function StatCard({
       </div>
 
       <div className="text-3xl font-bold mb-1">{value}</div>
-      <div className="text-gray-500 text-sm mb-3">{label}</div>
+      <div className="text-muted-foreground text-sm mb-3">{label}</div>
       <div
         className={`text-xs font-medium ${
           changeType === 'positive' ? 'text-[#4ade80]' : 'text-red-400'

@@ -29,7 +29,7 @@ export default function JobViewModal({ job, onClose, onEdit }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#0D1117] border border-white/10 rounded-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -40,11 +40,11 @@ export default function JobViewModal({ job, onClose, onEdit }: Props) {
               {status.label}
             </div>
             <h2 className="text-base font-semibold leading-tight">{job.title}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{job.department}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{job.department}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -52,35 +52,35 @@ export default function JobViewModal({ job, onClose, onEdit }: Props) {
 
         {/* Meta pills */}
         <div className="flex flex-wrap gap-2 mb-5">
-          <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
             <MapPin className="w-3.5 h-3.5" />
             {job.location}
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
             <Briefcase className="w-3.5 h-3.5" />
             {workTypeLabel(job.work_type)}
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
             <Building2 className="w-3.5 h-3.5" />
             {job.department}
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded-full">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
             <Clock className="w-3.5 h-3.5" />
             {new Date(job.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
         </div>
 
         {/* Description */}
-        <div className="border-t border-white/5 pt-5">
-          <p className="text-xs text-gray-500 font-medium mb-2 tracking-wider">DESCRIPTION</p>
-          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{job.description}</p>
+        <div className="border-t border-border pt-5">
+          <p className="text-xs text-muted-foreground font-medium mb-2 tracking-wider">DESCRIPTION</p>
+          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{job.description}</p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-6 pt-5 border-t border-white/5">
+        <div className="flex gap-3 mt-6 pt-5 border-t border-border">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-border text-foreground hover:border-border hover:text-foreground transition-colors"
           >
             Close
           </button>

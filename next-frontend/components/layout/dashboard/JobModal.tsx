@@ -12,9 +12,9 @@ interface Props {
   onSuccess: () => void
 }
 
-const INPUT = 'w-full bg-[#0A0D12] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors'
+const INPUT = 'w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-border transition-colors'
 // SELECT const removed — replaced by CustomSelect component
-const LABEL = 'text-xs text-gray-400'
+const LABEL = 'text-xs text-muted-foreground'
 
 export default function JobModal({ job, onClose, onSuccess }: Props) {
   const isEdit = !!job
@@ -54,7 +54,7 @@ export default function JobModal({ job, onClose, onSuccess }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#0D1117] border border-white/10 rounded-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -62,7 +62,7 @@ export default function JobModal({ job, onClose, onSuccess }: Props) {
           <h2 className="text-base font-semibold">{isEdit ? 'Edit Job' : 'New Job Post'}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -151,7 +151,7 @@ export default function JobModal({ job, onClose, onSuccess }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-border text-foreground hover:border-border hover:text-foreground transition-colors"
             >
               Cancel
             </button>

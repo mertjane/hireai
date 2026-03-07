@@ -33,7 +33,7 @@ const TABS: { key: typeof ALL | InterviewStatus; label: string }[] = [
 const STATUS_STYLES: Record<InterviewStatus, { dot: string; text: string; label: string }> = {
   scheduled:  { dot: 'bg-blue-400',   text: 'text-blue-400',   label: 'SCHEDULED' },
   completed:  { dot: 'bg-[#4ade80]',  text: 'text-[#4ade80]',  label: 'COMPLETED' },
-  cancelled:  { dot: 'bg-gray-400',   text: 'text-gray-400',   label: 'CANCELLED' },
+  cancelled:  { dot: 'bg-gray-400',   text: 'text-muted-foreground',   label: 'CANCELLED' },
   no_show:    { dot: 'bg-red-400',    text: 'text-red-400',    label: 'NO SHOW' },
 }
 
@@ -43,12 +43,12 @@ function StatCard({ value, label, color, active, onClick }: { value: string | nu
   return (
     <button
       onClick={onClick}
-      className={`bg-[#0D1117] border rounded-2xl px-4 py-3 flex-1 min-w-0 text-left transition-colors ${
-        active ? 'border-[#4ade80]/40 bg-[#4ade80]/5' : 'border-white/5 hover:border-white/10'
+      className={`bg-card border rounded-2xl px-4 py-3 flex-1 min-w-0 text-left transition-colors ${
+        active ? 'border-[#4ade80]/40 bg-[#4ade80]/5' : 'border-border hover:border-border'
       }`}
     >
-      <div className={`text-xl font-bold ${color ?? 'text-white'}`}>{value}</div>
-      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+      <div className={`text-xl font-bold ${color ?? 'text-foreground'}`}>{value}</div>
+      <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
     </button>
   )
 }
@@ -58,8 +58,8 @@ function SortIcon({ dir, size = 'sm' }: { dir: 'asc' | 'desc' | 'none'; size?: '
   const cls = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3'
   return (
     <span className="inline-flex flex-col -space-y-1.5">
-      <ChevronUp className={`${cls} ${dir === 'asc' ? 'text-[#4ade80]' : 'text-gray-600'}`} />
-      <ChevronDown className={`${cls} ${dir === 'desc' ? 'text-[#4ade80]' : 'text-gray-600'}`} />
+      <ChevronUp className={`${cls} ${dir === 'asc' ? 'text-[#4ade80]' : 'text-muted-foreground'}`} />
+      <ChevronDown className={`${cls} ${dir === 'desc' ? 'text-[#4ade80]' : 'text-muted-foreground'}`} />
     </span>
   )
 }
@@ -330,13 +330,13 @@ function InterviewsContent() {
       {/* search + job filter */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder={isSplit ? 'Search...' : 'Search candidates...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#0D1117] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/15 transition-colors"
+            className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-border transition-colors"
           />
         </div>
         <CustomSelect
@@ -355,7 +355,7 @@ function InterviewsContent() {
       </div>
 
       {/* status tabs — wrap when space is tight in split mode */}
-      <div className="flex flex-wrap gap-1 bg-[#0D1117] border border-white/5 rounded-xl p-1">
+      <div className="flex flex-wrap gap-1 bg-card border border-border rounded-xl p-1">
         {TABS.map((tab) => {
           const active = statusTab === tab.key
           const count = tabCounts[tab.key]
@@ -364,13 +364,13 @@ function InterviewsContent() {
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
               className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                active ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+                active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.label}
               {count > 0 && (
                 <span className={`text-[10px] px-1 py-0.5 rounded-full ${
-                  active ? 'bg-white/10 text-gray-300' : 'bg-white/5 text-gray-600'
+                  active ? 'bg-muted text-foreground' : 'bg-muted text-muted-foreground'
                 }`}>
                   {count}
                 </span>
@@ -411,8 +411,8 @@ function InterviewsContent() {
           isChecked
             ? 'bg-[#4ade80]/5 border-l-[#4ade80]'
             : isActive
-            ? 'bg-white/[0.04] border-l-[#4ade80]'
-            : 'hover:bg-white/[0.02] border-l-transparent'
+            ? 'bg-muted/40 border-l-[#4ade80]'
+            : 'hover:bg-muted/40 border-l-transparent'
         }`}
         style={{ gridTemplateColumns: '20px 1fr 52px 44px' }}
       >
@@ -422,29 +422,29 @@ function InterviewsContent() {
           className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
             isChecked
               ? 'bg-[#4ade80] border-[#4ade80]'
-              : 'border-white/15 hover:border-white/30'
+              : 'border-border hover:border-border'
           }`}
         >
           {isChecked && <Check className="w-2.5 h-2.5 text-black" />}
         </div>
         {/* name + status */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-foreground text-[10px] font-bold shrink-0`}>
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-white leading-tight truncate">{fullName}</p>
+            <p className="text-xs font-medium text-foreground leading-tight truncate">{fullName}</p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${st.text}`}>
                 <span className={`w-1 h-1 rounded-full ${st.dot}`} />
                 {st.label}
               </span>
-              {job && <span className="text-[9px] text-gray-600 truncate">{job.title}</span>}
+              {job && <span className="text-[9px] text-muted-foreground truncate">{job.title}</span>}
             </div>
           </div>
         </div>
         {/* date */}
-        <span className="text-[10px] text-gray-500">{shortDate}</span>
+        <span className="text-[10px] text-muted-foreground">{shortDate}</span>
         {/* score */}
         <div className="flex justify-end">
           {hasScore ? (
@@ -478,8 +478,8 @@ function InterviewsContent() {
           if (isSelecting) { toggleSelect(iv.id); return }
           setDetailInterview(iv)
         }}
-        className={`group grid items-center px-5 py-4 border-b border-white/5 last:border-0 transition-colors cursor-pointer ${
-          isChecked ? 'bg-[#4ade80]/5' : 'hover:bg-white/[0.02]'
+        className={`group grid items-center px-5 py-4 border-b border-border last:border-0 transition-colors cursor-pointer ${
+          isChecked ? 'bg-[#4ade80]/5' : 'hover:bg-muted/40'
         }`}
         style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}
       >
@@ -489,7 +489,7 @@ function InterviewsContent() {
           className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${
             isChecked
               ? 'bg-[#4ade80] border-[#4ade80]'
-              : 'border-white/15 hover:border-white/30'
+              : 'border-border hover:border-border'
           }`}
         >
           {isChecked && <Check className="w-3 h-3 text-black" />}
@@ -497,32 +497,32 @@ function InterviewsContent() {
 
         {/* candidate */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+          <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center text-foreground text-xs font-bold shrink-0`}>
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white leading-tight truncate">{fullName}</p>
-            {candidate && <p className="text-xs text-gray-500 truncate">{candidate.email}</p>}
+            <p className="text-sm font-medium text-foreground leading-tight truncate">{fullName}</p>
+            {candidate && <p className="text-xs text-muted-foreground truncate">{candidate.email}</p>}
           </div>
         </div>
 
         {/* position */}
-        <span className="text-sm text-gray-400 truncate">{job?.title ?? '—'}</span>
+        <span className="text-sm text-muted-foreground truncate">{job?.title ?? '—'}</span>
 
         {/* scheduled date */}
-        <span className="text-sm text-gray-400">{formatDate(iv.scheduled_at)}</span>
+        <span className="text-sm text-muted-foreground">{formatDate(iv.scheduled_at)}</span>
 
         {/* duration */}
-        <span className="text-sm text-gray-400">{iv.duration_minutes}m</span>
+        <span className="text-sm text-muted-foreground">{iv.duration_minutes}m</span>
 
         {/* score — ring only, no duplicate text */}
         <div className="flex items-center">
           {hasScore ? (
             <ScoreRing score={iv.final_score} />
           ) : iv.status === 'completed' ? (
-            <span className="text-[10px] font-semibold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">Not scored</span>
+            <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Not scored</span>
           ) : (
-            <span className="text-xs text-gray-600">—</span>
+            <span className="text-xs text-muted-foreground">—</span>
           )}
         </div>
 
@@ -544,7 +544,7 @@ function InterviewsContent() {
           {iv.status === 'scheduled' && !iv.token_revoke && (
             <button
               onClick={(e) => { e.stopPropagation(); handleCopy(iv.id, iv.token) }}
-              className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title="Copy interview link"
             >
               {copiedId === iv.id ? <Check className="w-3.5 h-3.5 text-[#4ade80]" /> : <Copy className="w-3.5 h-3.5" />}
@@ -556,7 +556,7 @@ function InterviewsContent() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title="Open interview link"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -566,7 +566,7 @@ function InterviewsContent() {
             <button
               onClick={(e) => { e.stopPropagation(); setConfirmCancelId(iv.id) }}
               disabled={cancellingId === iv.id}
-              className="p-1 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-colors disabled:opacity-40"
+              className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-40"
               title="Cancel interview"
             >
               <XCircle className="w-3.5 h-3.5" />
@@ -583,12 +583,12 @@ function InterviewsContent() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold">Interviews</h2>
-          <p className="text-gray-500 text-xs mt-0.5">Track and manage all interviews</p>
+          <p className="text-muted-foreground text-xs mt-0.5">Track and manage all interviews</p>
         </div>
         <div className="flex items-center gap-2">
           {/* bulk action bar — visible when items are selected */}
           {isSelecting && (
-            <div className="flex items-center gap-2 bg-[#0D1117] border border-[#4ade80]/20 rounded-xl px-3 py-1.5 animate-in fade-in">
+            <div className="flex items-center gap-2 bg-card border border-[#4ade80]/20 rounded-xl px-3 py-1.5 animate-in fade-in">
               <span className="text-xs font-semibold text-[#4ade80] mr-1">{selectedIds.size} selected</span>
               {selectedCancellable > 0 && (
                 <button
@@ -610,14 +610,14 @@ function InterviewsContent() {
               </button>
               <button
                 onClick={handleExportSelected}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-300 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-foreground bg-muted rounded-lg hover:bg-muted transition-colors"
               >
                 <Download className="w-3 h-3" />
                 Export
               </button>
               <button
                 onClick={clearSelection}
-                className="p-1.5 text-gray-500 hover:text-white transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 title="Clear selection"
               >
                 <X className="w-3.5 h-3.5" />
@@ -627,7 +627,7 @@ function InterviewsContent() {
           {filtered.length > 0 && !isSelecting && (
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0D1117] border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:border-white/20 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:text-foreground hover:border-border transition-colors"
             >
               <Download className="w-4 h-4" />
               Export CSV
@@ -654,9 +654,9 @@ function InterviewsContent() {
             {filtersUI}
 
             {/* compact interview list */}
-            <div className="bg-[#0D1117] border border-white/5 rounded-2xl flex-1 overflow-hidden flex flex-col min-h-0">
+            <div className="bg-card border border-border rounded-2xl flex-1 overflow-hidden flex flex-col min-h-0">
               {/* column headers with checkbox + sort buttons */}
-              <div className="grid gap-x-2 items-center px-3 py-2 border-b border-white/5 shrink-0" style={{ gridTemplateColumns: '20px 1fr 52px 44px' }}>
+              <div className="grid gap-x-2 items-center px-3 py-2 border-b border-border shrink-0" style={{ gridTemplateColumns: '20px 1fr 52px 44px' }}>
                 {/* select all checkbox */}
                 <div
                   onClick={toggleSelectAll}
@@ -665,25 +665,25 @@ function InterviewsContent() {
                       ? 'bg-[#4ade80] border-[#4ade80]'
                       : isSelecting
                       ? 'border-[#4ade80]/50 bg-[#4ade80]/10'
-                      : 'border-white/15 hover:border-white/30'
+                      : 'border-border hover:border-border'
                   }`}
                 >
                   {filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id)) && (
                     <Check className="w-2.5 h-2.5 text-black" />
                   )}
                 </div>
-                <span className="text-[10px] font-semibold text-gray-500 tracking-widest">
+                <span className="text-[10px] font-semibold text-muted-foreground tracking-widest">
                   {isSelecting ? `${selectedIds.size} SELECTED` : `${filtered.length} INTERVIEW${filtered.length !== 1 ? 'S' : ''}`}
                 </span>
                 <button
                   onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
-                  className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
+                  className="flex items-center gap-0.5 text-[10px] font-semibold text-muted-foreground tracking-widest hover:text-foreground transition-colors"
                 >
                   DATE <SortIcon dir={dateSortDir} size="sm" />
                 </button>
                 <button
                   onClick={() => setSortByScore((v) => v === 'none' ? 'desc' : v === 'desc' ? 'asc' : 'none')}
-                  className="flex items-center gap-0.5 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors justify-end"
+                  className="flex items-center gap-0.5 text-[10px] font-semibold text-muted-foreground tracking-widest hover:text-foreground transition-colors justify-end"
                 >
                   SCORE <SortIcon dir={sortByScore} size="sm" />
                 </button>
@@ -694,13 +694,13 @@ function InterviewsContent() {
                 {isLoading ? (
                   <div className="p-3 flex flex-col gap-2">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" />
+                      <div key={i} className="h-10 bg-muted rounded-lg animate-pulse" />
                     ))}
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center flex-1 gap-2.5">
-                    <Search className="w-5 h-5 text-gray-600" />
-                    <p className="text-xs text-gray-500">No matches</p>
+                    <Search className="w-5 h-5 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">No matches</p>
                     <button
                       onClick={() => { setStatusTab(ALL); setJobFilter(ALL); setScoreFilter('all'); setSearch('') }}
                       className="text-[10px] text-[#4ade80] hover:underline mt-0.5"
@@ -735,9 +735,9 @@ function InterviewsContent() {
           {filtersUI}
 
           {/* full table */}
-          <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden">
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
             {/* table header */}
-            <div className="grid px-5 py-3 border-b border-white/5" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
+            <div className="grid px-5 py-3 border-b border-border" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
               {/* select all checkbox */}
               <div
                 onClick={toggleSelectAll}
@@ -746,7 +746,7 @@ function InterviewsContent() {
                     ? 'bg-[#4ade80] border-[#4ade80]'
                     : isSelecting
                     ? 'border-[#4ade80]/50 bg-[#4ade80]/10'
-                    : 'border-white/15 hover:border-white/30'
+                    : 'border-border hover:border-border'
                 }`}
               >
                 {filtered.length > 0 && filtered.every((iv) => selectedIds.has(iv.id)) && (
@@ -758,7 +758,7 @@ function InterviewsContent() {
                   <button
                     key={h}
                     onClick={() => { setSortByScore('none'); setSortNewest((v) => !v) }}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
+                    className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground tracking-widest hover:text-foreground transition-colors"
                   >
                     {h}
                     <SortIcon dir={dateSortDir} size="md" />
@@ -767,13 +767,13 @@ function InterviewsContent() {
                   <button
                     key={h}
                     onClick={() => setSortByScore((v) => v === 'none' ? 'desc' : v === 'desc' ? 'asc' : 'none')}
-                    className="flex items-center gap-1 text-[10px] font-semibold text-gray-500 tracking-widest hover:text-gray-300 transition-colors"
+                    className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground tracking-widest hover:text-foreground transition-colors"
                   >
                     {h}
                     <SortIcon dir={sortByScore} size="md" />
                   </button>
                 ) : (
-                  <span key={h || '_actions'} className="text-[10px] font-semibold text-gray-500 tracking-widest">{h}</span>
+                  <span key={h || '_actions'} className="text-[10px] font-semibold text-muted-foreground tracking-widest">{h}</span>
                 )
               ))}
             </div>
@@ -781,9 +781,9 @@ function InterviewsContent() {
             {isLoading ? (
               <div className="flex flex-col">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="grid px-5 py-4 border-b border-white/5 gap-4" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
+                  <div key={i} className="grid px-5 py-4 border-b border-border gap-4" style={{ gridTemplateColumns: '28px 2fr 1.5fr 1fr 0.5fr 1fr 0.7fr 72px' }}>
                     {Array.from({ length: 8 }).map((__, j) => (
-                      <div key={j} className="h-4 bg-white/5 rounded animate-pulse" />
+                      <div key={j} className="h-4 bg-muted rounded animate-pulse" />
                     ))}
                   </div>
                 ))}
@@ -792,12 +792,12 @@ function InterviewsContent() {
               interviews.length === 0 ? (
                 // true empty state — no interviews at all
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center">
-                    <ClipboardList className="w-7 h-7 text-gray-600" />
+                  <div className="w-16 h-16 rounded-2xl bg-muted/40 border border-border flex items-center justify-center">
+                    <ClipboardList className="w-7 h-7 text-muted-foreground" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-400">No interviews yet</p>
-                    <p className="text-xs text-gray-600 mt-1">Schedule your first interview to get started</p>
+                    <p className="text-sm font-medium text-muted-foreground">No interviews yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Schedule your first interview to get started</p>
                   </div>
                   <button
                     onClick={() => router.push('/dashboard/interview-setup')}
@@ -810,8 +810,8 @@ function InterviewsContent() {
               ) : (
                 // filtered results empty — interviews exist but none match filters
                 <div className="flex flex-col items-center justify-center py-24 gap-3">
-                  <Search className="w-6 h-6 text-gray-600" />
-                  <p className="text-sm text-gray-500">No interviews match your filters</p>
+                  <Search className="w-6 h-6 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">No interviews match your filters</p>
                   <button
                     onClick={() => { setStatusTab(ALL); setJobFilter(ALL); setScoreFilter('all'); setSearch('') }}
                     className="text-xs text-[#4ade80] hover:underline mt-1"
@@ -832,11 +832,11 @@ function InterviewsContent() {
       {/* bulk action confirmation modal */}
       {confirmBulkAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-sm font-bold text-white mb-2">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-sm font-bold text-foreground mb-2">
               {confirmBulkAction === 'delete' ? 'Delete Selected Interviews?' : 'Cancel Selected Interviews?'}
             </h3>
-            <p className="text-xs text-gray-400 mb-5">
+            <p className="text-xs text-muted-foreground mb-5">
               {confirmBulkAction === 'delete'
                 ? `This will permanently delete ${selectedIds.size} interview${selectedIds.size > 1 ? 's' : ''} and all associated data.`
                 : `This will cancel ${selectedCancellable} scheduled interview${selectedCancellable > 1 ? 's' : ''} and revoke their links.`
@@ -845,7 +845,7 @@ function InterviewsContent() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirmBulkAction(null)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Keep
               </button>
@@ -872,13 +872,13 @@ function InterviewsContent() {
       {/* cancel confirmation modal */}
       {confirmCancelId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#0D1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-sm font-bold text-white mb-2">Cancel Interview?</h3>
-            <p className="text-xs text-gray-400 mb-5">This will revoke the interview link. The candidate will no longer be able to access it.</p>
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-sm font-bold text-foreground mb-2">Cancel Interview?</h3>
+            <p className="text-xs text-muted-foreground mb-5">This will revoke the interview link. The candidate will no longer be able to access it.</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirmCancelId(null)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Keep
               </button>

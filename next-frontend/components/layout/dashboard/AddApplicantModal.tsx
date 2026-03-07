@@ -56,20 +56,20 @@ export default function AddApplicantModal({ companyId, jobs, onClose, onSuccess 
     }
   }
 
-  const inputCls = 'w-full bg-[#0A0D12] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/20 transition-colors'
-  const labelCls = 'text-[10px] font-semibold text-gray-500 tracking-widest block mb-1.5'
+  const inputCls = 'w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-border transition-colors'
+  const labelCls = 'text-[10px] font-semibold text-muted-foreground tracking-widest block mb-1.5'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-md bg-[#0D1117] border border-white/10 rounded-2xl p-6 flex flex-col gap-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 flex flex-col gap-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-white">Add Applicant</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors">
+          <h3 className="font-semibold text-foreground">Add Applicant</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -111,7 +111,7 @@ export default function AddApplicantModal({ companyId, jobs, onClose, onSuccess 
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 bg-[#0A0D12] border border-dashed border-white/10 rounded-xl px-3 py-3 text-sm text-gray-500 hover:border-white/20 hover:text-gray-300 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-background border border-dashed border-border rounded-xl px-3 py-3 text-sm text-muted-foreground hover:border-border hover:text-foreground transition-colors"
             >
               <Upload className="w-4 h-4" />
               {cvFile ? cvFile.name : 'Click to upload PDF, DOC, DOCX'}
@@ -124,7 +124,7 @@ export default function AddApplicantModal({ companyId, jobs, onClose, onSuccess 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:border-white/20 hover:text-white transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-border text-foreground hover:border-border hover:text-foreground transition-colors"
             >
               Cancel
             </button>

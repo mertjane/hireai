@@ -46,17 +46,17 @@ export default function CustomSelect({ value, options, onChange, className = '',
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between gap-2 bg-[#0A0D12] border rounded-xl outline-none transition-colors cursor-pointer ${
-          open ? 'border-white/20' : 'border-white/10 hover:border-white/15'
+        className={`w-full flex items-center justify-between gap-2 bg-card border rounded-xl outline-none transition-colors cursor-pointer ${
+          open ? 'border-border' : 'border-border hover:border-border'
         } ${isSmall ? 'px-3 py-1.5 text-xs rounded-lg' : 'px-4 py-2.5 text-sm'}`}
       >
-        <span className="text-gray-300 truncate">{triggerText}</span>
-        <ChevronDown className={`shrink-0 text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
+        <span className="text-foreground truncate">{triggerText}</span>
+        <ChevronDown className={`shrink-0 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''} ${isSmall ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
       </button>
 
       {/* dropdown panel */}
       {open && (
-        <div className={`absolute z-50 left-0 mt-1 bg-[#0A0D12] border border-white/10 shadow-xl shadow-black/40 overflow-hidden overflow-y-auto max-h-60 ${
+        <div className={`absolute z-50 left-0 mt-1 bg-card border border-border shadow-xl shadow-black/20 overflow-hidden overflow-y-auto max-h-60 ${
           dropdownFit ? 'min-w-full w-max' : 'right-0'
         } ${isSmall ? 'rounded-lg' : 'rounded-xl'}`}>
           {options.map((opt) => {
@@ -67,7 +67,7 @@ export default function CustomSelect({ value, options, onChange, className = '',
                 type="button"
                 onClick={() => { onChange(opt.value); setOpen(false) }}
                 className={`w-full flex items-center justify-between gap-2 transition-colors whitespace-nowrap ${
-                  active ? 'bg-white/[0.06] text-white' : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200'
+                  active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                 } ${isSmall ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm'}`}
               >
                 <span>{opt.label}</span>

@@ -62,7 +62,7 @@ export default function JobListingsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold">Job Listings</h2>
-          <p className="text-gray-500 text-sm mt-1">Manage your active and draft vacancies</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your active and draft vacancies</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
@@ -76,13 +76,13 @@ export default function JobListingsPage() {
       {/* Search + filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search job titles..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#0D1117] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-white/15 transition-colors"
+            className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-primary/40 transition-colors"
           />
         </div>
 
@@ -110,11 +110,11 @@ export default function JobListingsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-48 bg-[#0D1117] border border-white/5 rounded-xl animate-pulse" />
+            <div key={i} className="h-48 bg-card border border-border rounded-xl animate-pulse" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex items-center justify-center h-48 text-gray-600 text-sm">
+        <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
           No jobs found.
         </div>
       ) : (

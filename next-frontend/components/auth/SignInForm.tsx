@@ -21,11 +21,11 @@ export default function SignInForm() {
     setError('')
     setLoading(true)
     try {
-      const { token, profile } = await signIn({ email, password })
+      const { token, refreshToken, profile } = await signIn({ email, password })
       await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, profile }),
+        body: JSON.stringify({ token, refreshToken, profile }),
       })
       router.push('/dashboard')
     } catch (err: unknown) {

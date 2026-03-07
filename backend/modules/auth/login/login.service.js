@@ -22,8 +22,9 @@ export const loginCompany = async ({ email, password }) => {
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const token = await userCredential.user.getIdToken();
+    const refreshToken = userCredential.user.refreshToken;
 
     const { password_hash, ...profile } = company;
 
-    return { profile, token };
+    return { profile, token, refreshToken };
 };

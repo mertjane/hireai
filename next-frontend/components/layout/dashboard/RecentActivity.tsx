@@ -54,7 +54,7 @@ export default function RecentActivity() {
           dot: 'bg-[#4ade80]',
           text: (
             <>
-              <span className="text-white font-medium">{name}</span>
+              <span className="text-foreground font-medium">{name}</span>
               {' completed interview for '}
               <span className="font-semibold">{jobTitle}</span>
             </>
@@ -67,7 +67,7 @@ export default function RecentActivity() {
           dot: 'bg-blue-400',
           text: (
             <>
-              <span className="text-white font-medium">{name}</span>
+              <span className="text-foreground font-medium">{name}</span>
               {' has a scheduled interview for '}
               <span className="font-semibold">{jobTitle}</span>
             </>
@@ -81,7 +81,7 @@ export default function RecentActivity() {
           text: (
             <>
               {'Interview for '}
-              <span className="text-white font-medium">{name}</span>
+              <span className="text-foreground font-medium">{name}</span>
               {' was cancelled'}
             </>
           ),
@@ -93,7 +93,7 @@ export default function RecentActivity() {
           dot: 'bg-red-400',
           text: (
             <>
-              <span className="text-white font-medium">{name}</span>
+              <span className="text-foreground font-medium">{name}</span>
               {' did not show up for '}
               <span className="font-semibold">{jobTitle}</span>
             </>
@@ -112,7 +112,7 @@ export default function RecentActivity() {
         text: (
           <>
             {'New application from '}
-            <span className="text-white font-medium">{c.first_name} {c.last_name}</span>
+            <span className="text-foreground font-medium">{c.first_name} {c.last_name}</span>
             {j ? <> for <span className="font-semibold">{j.title}</span></> : null}
           </>
         ),
@@ -127,27 +127,27 @@ export default function RecentActivity() {
   }, [interviews, candidates, jobs])
 
   return (
-    <div className="bg-[#0D1117] border border-white/5 rounded-xl p-5">
+    <div className="bg-card border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-semibold">Recent Activity</h2>
         <Link
           href="/dashboard/interviews"
-          className="text-xs text-gray-500 hover:text-white transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           View all
         </Link>
       </div>
       {activities.length === 0 ? (
-        <p className="text-sm text-gray-600 py-4">No activity yet.</p>
+        <p className="text-sm text-muted-foreground py-4">No activity yet.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-white/5">
+        <ul className="flex flex-col divide-y divide-border">
           {activities.map((item, i) => (
             <li key={i} className="flex items-start justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
               <div className="flex items-start gap-3">
                 <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${item.dot}`} />
-                <p className="text-sm text-gray-400 leading-snug">{item.text}</p>
+                <p className="text-sm text-muted-foreground leading-snug">{item.text}</p>
               </div>
-              <span className="text-xs text-gray-600 shrink-0 mt-0.5">{item.time}</span>
+              <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{item.time}</span>
             </li>
           ))}
         </ul>
